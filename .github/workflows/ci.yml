@@ -29,4 +29,5 @@ jobs:
       - run: pip install markdown-exec[ansi]>=1.10.3
       - run: pip install mkdocs-autorefs>=1.4.2
       - run: pip install mkdocstrings[python]>=0.29.1
+      - run: pip install git+https://https://github.com/ATL2001/spatial_polars.git
       - run: mkdocs gh-deploy --force
