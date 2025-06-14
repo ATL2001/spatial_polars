@@ -277,9 +277,6 @@ def scan_spatial(
                             geometries = batch[geom_col][0:n_rows]
                             shapely_goms = shapely.from_wkb(geometries)
                             geometries = shapely.to_wkb(shapely_goms)
-
-                            print(batch)
-
                             # create the dataframe with the non geometry columns
                             # then add struct column with the WKB geometries/CRS
                             df = pl.DataFrame(
