@@ -1,0 +1,49 @@
+[project]
+name = "spatial-polars"
+version = "0.1.0"
+description = "A package that extends polars for working with geospatial data."
+readme = "README.md"
+authors = [
+    { name = "Aaron T. Leese", email = "ATLeese@gmail.com" }
+]
+requires-python = ">=3.9"
+dependencies = [
+    "cloudpickle>=3.1.1", # needed for using spatialexpr in filter contexts
+    "geoarrow-pyarrow>=0.1.2",
+    "numpy>=1.14",
+    "polars>=1.30.0",
+    "pyarrow>=14.0.2",
+    "pyogrio>=0.11.0",
+    "pyproj>=3.3",
+    "shapely>=2.0.7",
+    "tzdata>=2025.2",
+]
+
+[project.scripts]
+spatial-polars = "spatial_polars:main"
+
+[project.optional-dependencies]
+lonboard = [
+    "lonboard>=0.10.4",
+    "matplotlib>=3.7.5",
+    "palettable>=3.3.3",
+]
+examples = [
+    "geodatasets>=2024.8.0",
+]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[dependency-groups]
+dev = [
+    "griffe>=1.7.3",
+    "ipykernel>=6.29.5",
+    "markdown-exec[ansi]>=1.10.3",
+    "mkdocs-autorefs>=1.4.2",
+    "mkdocs-material>=9.6.14",
+    "mkdocstrings[python]>=0.29.1",
+    "pytest>=8.3.5",
+    "ruff>=0.11.11",
+]

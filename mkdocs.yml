@@ -1,0 +1,90 @@
+site_name: Spatial Polars
+site_url: https://github.com/ATL2001/spatial-polars
+theme:
+  name: material
+  features:
+    - content.code.annotate
+    - content.code.copy
+    - content.code.select
+  font:
+    code: Roboto Mono
+  palette: 
+    - scheme: default
+      toggle:
+        icon: material/weather-night
+        name: Light mode
+    - scheme: slate
+      toggle:
+        icon: material/weather-sunny
+        name: Dark mode
+  icon:
+    repo: fontawesome/brands/github
+    logo: fontawesome/solid/globe  
+
+repo_url: https://github.com/ATL2001/ATL2001/spatial-polars
+
+plugins:
+  - search
+  - autorefs
+  - mkdocstrings:
+      handlers:
+        python:
+          inventories:
+          - https://docs.python.org/3/objects.inv
+          - https://developmentseed.org/lonboard/latest/objects.inv
+          - https://shapely.readthedocs.io/en/stable/objects.inv
+          - https://docs.pola.rs/api/python/stable/objects.inv
+          - https://pyogrio.readthedocs.io/en/latest/objects.inv
+          - https://installer.readthedocs.io/en/stable/objects.inv
+          options:
+            docstring_style: numpy
+            show_source: true
+            show_docstring_examples: true
+            members_order: source
+  - markdown-exec
+
+
+markdown_extensions:
+  - admonition
+  - attr_list
+  - pymdownx.emoji:
+      emoji_index: !!python/name:material.extensions.emoji.twemoji
+      emoji_generator: !!python/name:material.extensions.emoji.to_svg
+  - pymdownx.highlight:
+      anchor_linenums: true
+      line_spans: __span
+      pygments_lang_class: true
+  - pymdownx.inlinehilite
+  - pymdownx.snippets:
+      check_paths: true
+      base_path: [docs/snippets]
+  - pymdownx.superfences
+  - md_in_html
+  - pymdownx.details
+  
+nav:
+  - index.md
+  - Examples:
+    - examples/reading_data.md
+    - examples/starting_from_a_polars_df.md
+    - examples/writing_data.md
+    - examples/spatial_join.md
+    - examples/reprojection.md
+    - Expressions:
+      - examples/expressions/single_geometry_column_input_expressions.md
+      - examples/expressions/geometry_column_and_scalar_geometry_input_expressions.md
+      - examples/expressions/two_geometry_column_input_expressions.md
+      - examples/expressions/group_by_context_expressions.md
+      - examples/expressions/spatial_filter.md
+    - Visualization:
+      - examples/visualization/viz.md
+      - examples/visualization/scatterplotlayer.md
+      - examples/visualization/pathlayer.md
+      - examples/visualization/polygonlayer.md
+  - API:
+    - io.md
+    - SpatialFrame.md
+    - SpatialExpr.md
+
+exclude_docs:
+  snippets
