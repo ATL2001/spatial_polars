@@ -1,6 +1,6 @@
 [project]
 name = "spatial-polars"
-version = "0.1.0"
+version = "0.1.1"
 description = "A package that extends polars for working with geospatial data."
 readme = "README.md"
 authors = [
