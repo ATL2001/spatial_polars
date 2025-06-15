@@ -9,8 +9,17 @@ Spatial polars is mostly just glue code connecting the work of others to bring s
 
 ## Installation
 Spatial polars can be installed from pypi
-```
+```title="Install with no optional dependencies"
 pip install spatial-polars
+```
+```title="Install with dependencies for displaying data on a lonboard map"
+pip install spatial-polars[lonboard]
+```
+```title="Install with dependencies to run examples in this guide (installs geodatasets)"
+pip install spatial-polars[examples]
+```
+```title="Install with all optional dependencies"
+pip install spatial-polars[lonboard, examples]
 ```
 
 ## Lazily access geospatial data

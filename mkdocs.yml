@@ -21,7 +21,7 @@ theme:
     repo: fontawesome/brands/github
     logo: fontawesome/solid/globe  
 
-repo_url: https://github.com/ATL2001/ATL2001/spatial-polars
+repo_url: https://github.com/ATL2001/spatial_polars
 
 plugins:
   - search

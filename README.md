@@ -7,6 +7,9 @@ Spatial polars uses [lonboard](https://developmentseed.org/lonboard/latest/) for
 
 Spatial polars is mostly just glue code connecting the work of others to bring spatial funcitonality to polars.
 
+## Documentation
+Documentation can be found here: [https://atl2001.github.io/spatial_polars/](https://atl2001.github.io/spatial_polars/)
+
 ## Lazily access data
 Spatial polars scan_spatial function will scan geoparquet files and any other data source [supported by pyogrio](https://pyogrio.readthedocs.io/en/latest/supported_formats.html) and return a polars lazy frame.  A read_spatial function is also provided which simply wraps scan_spatial with a .collect() at the end to return a polars dataframe. The scan_spatial function was the reason this package was created, it is much preferred over the read_spatial function for [the same reasons that polars recommends](https://docs.pola.rs/user-guide/lazy/using/) using the lazy API over the eager API.
 

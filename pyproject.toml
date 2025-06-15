@@ -1,6 +1,6 @@
 [project]
 name = "spatial-polars"
-version = "0.1.1"
+version = "0.1.2" # dont forget __init__.py and uv lock
 description = "A package that extends polars for working with geospatial data."
 readme = "README.md"
 authors = [
