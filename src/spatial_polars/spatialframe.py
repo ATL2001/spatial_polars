@@ -8,19 +8,19 @@ import random
 import shapely
 import geoarrow.pyarrow as ga
 from geoarrow.pyarrow import io as gaio
-from lonboard import viz, PathLayer, PolygonLayer, ScatterplotLayer
-from lonboard.colormap import apply_continuous_cmap, apply_categorical_cmap
+
 from polars import col as c
 
 from ._utils import validate_cmap_input, validate_width_and_radius_input
 
 if TYPE_CHECKING:
+    from lonboard import Map, PathLayer, PolygonLayer, ScatterplotLayer
     from lonboard.types.layer import (
         PathLayerKwargs,
         PolygonLayerKwargs,
         ScatterplotLayerKwargs,
     )
-    from lonboard.types.map import Map, MapKwargs
+    from lonboard.types.map import MapKwargs
     from io import BytesIO
     from numpy.typing import NDArray
     from palettable.palette import Palette
@@ -650,6 +650,7 @@ class SpatialFrame:
         >>> df.spatial.viz()
 
         """
+        from lonboard import viz
         geoarrow_table = self.to_geoarrow(geometry_name)
 
         return viz(
@@ -808,6 +809,9 @@ class SpatialFrame:
 
 
         """
+        from lonboard import ScatterplotLayer
+        from lonboard.colormap import apply_continuous_cmap, apply_categorical_cmap
+
         validate_cmap_input(
             self._df,
             fill_cmap_col,
@@ -1022,6 +1026,10 @@ class SpatialFrame:
 
 
         """
+        from lonboard import PathLayer
+        from lonboard.colormap import apply_continuous_cmap, apply_categorical_cmap
+
+
         validate_cmap_input(
             self._df, cmap_col, cmap_type, cmap, alpha, normalize_cmap_col
         )
@@ -1217,6 +1225,9 @@ class SpatialFrame:
         Implementation varies slightly from Lonboard for the setting of color and width to make it easy to use from the SpatialFrame.
 
         """
+        from lonboard import PolygonLayer
+        from lonboard.colormap import apply_continuous_cmap, apply_categorical_cmap
+
         validate_cmap_input(
             self._df,
             fill_cmap_col,

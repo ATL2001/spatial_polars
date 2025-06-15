@@ -4,9 +4,8 @@ from typing import Any
 
 import numpy as np
 import polars as pl
-from palettable.palette import Palette
 from polars import selectors as cs
-from matplotlib.colors import Colormap
+
 
 
 def validate_col_exists_in_df(df: pl.DataFrame, col: Any):
@@ -49,6 +48,8 @@ def validate_cmap_input(
         )
 
     if cmap_type == "continuous":
+        from palettable.palette import Palette
+        from matplotlib.colors import Colormap
         if isinstance(cmap, (Palette, Colormap)) is False:
             # verify continuous cmaps get a cmap or appropriate type.
             raise ValueError(
