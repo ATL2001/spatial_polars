@@ -223,6 +223,9 @@ def scan_spatial(
                 [PYOGRIO_POLARS_DTYPES[dt] for dt in layer_info["dtypes"]],
             )
         )
+        if layer_info.get("fid_column"):
+
+            schema[layer_info.get("fid_column")] = pl.Int64
         if layer_info.get("geometry_type"):
             schema["geometry"] = spatial_series_dtype
 
@@ -236,23 +239,30 @@ def scan_spatial(
             Generator function that creates the source.
             This function will be registered as IO source.
             """
+            return_fids = False
 
             if batch_size is None:
                 batch_size = 100
 
             if with_columns is None:
                 read_geometry = True
+                return_fids = True
             elif "geometry" in with_columns:
                 read_geometry = True
                 with_columns.remove("geometry")
             else:
                 read_geometry = False
+            
+            if with_columns is not None and layer_info.get("fid_column") in with_columns:
+                return_fids = True
+                with_columns.remove(layer_info.get("fid_column"))
 
             with pyogrio.open_arrow(
                 path_or_buffer,
                 layer=layer,
                 encoding=encoding,
                 columns=with_columns,
+                return_fids=return_fids,
                 read_geometry=read_geometry,
                 force_2d=False,
                 bbox=bbox,
@@ -261,18 +271,18 @@ def scan_spatial(
                 use_pyarrow=True,
             ) as source:
                 meta, reader = source
-
-                # extract the crs from the metadata
-                crs_wkt = pyproj.CRS(meta["crs"]).to_wkt()
-
-                geom_col = meta["geometry_name"] or "wkb_geometry"
+                
+                if read_geometry is True and layer_info.get("geometry_type"):
+                    # extract the crs from the metadata
+                    crs_wkt = pyproj.CRS(meta["crs"]).to_wkt()
+                    geom_col = meta["geometry_name"] or "wkb_geometry"
 
                 while n_rows is None or n_rows > 0:
                     for batch in reader:
                         if n_rows is not None and n_rows <= 0:
                             break
 
-                        if read_geometry:
+                        if read_geometry and layer_info.get("geometry_type"):
                             # get the geometries from the batch
                             geometries = batch[geom_col][0:n_rows]
                             shapely_goms = shapely.from_wkb(geometries)
