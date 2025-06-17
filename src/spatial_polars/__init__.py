@@ -12,4 +12,4 @@ __all__ = [
     "SpatialExpr",
 ]
 
-__version__ = "0.1.2" # dont forget pyproject.toml and uv lock
+__version__ = "0.1.3" # dont forget pyproject.toml and uv lock
