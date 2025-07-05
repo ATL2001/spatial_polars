@@ -224,7 +224,6 @@ def scan_spatial(
             )
         )
         if layer_info.get("fid_column"):
-
             schema[layer_info.get("fid_column")] = pl.Int64
         if layer_info.get("geometry_type"):
             schema["geometry"] = spatial_series_dtype
@@ -268,7 +267,7 @@ def scan_spatial(
                 bbox=bbox,
                 mask=mask,
                 batch_size=batch_size,
-                use_pyarrow=True,
+                use_pyarrow=True, 
             ) as source:
                 meta, reader = source
                 

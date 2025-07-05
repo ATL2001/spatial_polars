@@ -10,6 +10,7 @@ import geoarrow.pyarrow as ga
 from geoarrow.pyarrow import io as gaio
 
 from polars import col as c
+from polars import selectors as cs
 
 from ._utils import validate_cmap_input, validate_width_and_radius_input
 
@@ -168,7 +169,7 @@ class SpatialFrame:
             path to output file on writeable file system.
 
         geometry_name
-            The name of the column in the dataframe that will be written as the geometry field.
+            The name(s) of the column(s) in the dataframe that will be written with geoarrow metadata.
 
         crs
             WKT-encoded CRS of the geometries to be written.  If left as None, the CRS from the geometry column's struct will be used.
@@ -201,7 +202,7 @@ class SpatialFrame:
 
     def to_geoarrow(
         self,
-        geometry_name: str = "geometry",
+        geometry_name: List[str]|str = ["geometry"],
     ):
         r"""
         Converts the dataframe to geoarrow table.
@@ -210,7 +211,7 @@ class SpatialFrame:
         ----------
 
         geometry_name
-            The name of the column in the dataframe that will be written as the geometry field.
+            The name(s) of the column(s) in the dataframe that will be written with geoarrow metadata.
 
         Note
         ----
@@ -248,9 +249,11 @@ class SpatialFrame:
 
         """
         # create pyarrow table from the dataframe without the geometry
+        if isinstance(geometry_name, str):
+            geometry_name = [geometry_name]
 
         no_null_geoms_df = self._df.filter(
-            c(geometry_name).struct.field("wkb_geometry").is_not_null()
+            pl.any_horizontal(pl.col(*geometry_name).is_not_null())
         )
         if len(no_null_geoms_df) != len(self._df):
             Warning(
@@ -258,19 +261,20 @@ class SpatialFrame:
             )
 
         pa_table = self._df.drop(geometry_name).to_arrow()
+        
+        for this_g_name in geometry_name:
+            crs = pyproj.CRS(self._df[this_g_name].struct.field("crs")[0]).to_wkt(
+                version="WKT1_GDAL"
+            )
 
-        crs = pyproj.CRS(self._df[geometry_name].struct.field("crs")[0]).to_wkt(
-            version="WKT1_GDAL"
-        )
+            # create geoarrow array with crs from the geometry
+            geometries_wkb = (
+                self._df[this_g_name].struct.field("wkb_geometry").to_numpy().copy()
+            )
+            geoarrow_geom_array = ga.with_crs(ga.as_geoarrow(geometries_wkb), crs)
 
-        # create geoarrow array with crs from the geometry
-        geometries_wkb = (
-            self._df[geometry_name].struct.field("wkb_geometry").to_numpy().copy()
-        )
-        geoarrow_geom_array = ga.with_crs(ga.as_geoarrow(geometries_wkb), crs)
-
-        # add the geoarrow geometry to the arrow table
-        pa_table = pa_table.append_column(geometry_name, geoarrow_geom_array)
+            # add the geoarrow geometry to the arrow table
+            pa_table = pa_table.append_column(this_g_name, geoarrow_geom_array)
         return pa_table
 
     def join(
@@ -695,6 +699,7 @@ class SpatialFrame:
         visible: bool = True,
         antialiasing: bool = True,
         billboard: bool = False,
+        **kwargs
     ) -> ScatterplotLayer:
         """
         Makes a Lonboard [ScatterplotLayer][lonboard.ScatterplotLayer] from the SpatialFrame.
@@ -802,6 +807,9 @@ class SpatialFrame:
 
         billboard
             If True, rendered circles always face the camera. If False circles face up (i.e. are parallel with the ground plane).
+
+        kwargs
+            additional kwargs to be supplied to the layer creation such as [layer extensions][lonboard.layer-extensions]
 
         Note
         ----
@@ -920,6 +928,7 @@ class SpatialFrame:
             radius_units=radius_units,
             stroked=stroked,
             visible=visible,
+            **kwargs
         )
         return layer
 
@@ -946,6 +955,7 @@ class SpatialFrame:
         width_max_pixels: Optional[float] = None,
         width_scale: float = 1,
         width_units: Literal["meters", "common", "pixels"] = "meters",
+        **kwargs
     ) -> PathLayer:
         """
         Makes a Lonboard [PathLayer][lonboard.PathLayer] from the SpatialFrame.
@@ -1020,6 +1030,9 @@ class SpatialFrame:
         width_units
             The units of the line width, one of 'meters', 'common', and 'pixels'. See unit system.
 
+        kwargs
+            additional kwargs to be supplied to the layer creation such as [layer extensions][lonboard.layer-extensions]
+
         Note
         ----
         Implementation varies slightly from Lonboard for the setting of color and width to make it easy to use from the SpatialFrame.
@@ -1082,6 +1095,7 @@ class SpatialFrame:
             width_max_pixels=width_max_pixels,
             width_scale=width_scale,
             width_units=width_units,
+            **kwargs
         )
         return layer
 
@@ -1117,6 +1131,7 @@ class SpatialFrame:
         pickable: bool = True,
         visible: bool = True,
         wireframe: bool = False,
+        **kwargs
     ) -> PolygonLayer:
         """
         Makes a Lonboard [PolygonLayer][lonboard.PolygonLayer] from the SpatialFrame.
@@ -1219,6 +1234,9 @@ class SpatialFrame:
 
         wireframe
             Whether to generate a line wireframe of the polygon. The outline will have "horizontal" lines closing the top and bottom polygons and a vertical line (a "strut") for each vertex on the polygon.
+
+        kwargs
+            additional kwargs to be supplied to the layer creation such as [layer extensions][lonboard.layer-extensions]
 
         Note
         ----
@@ -1337,6 +1355,7 @@ class SpatialFrame:
             stroked=stroked,
             visible=visible,
             wireframe=wireframe,
+            **kwargs
         )
         return layer
 

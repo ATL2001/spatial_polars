@@ -73,16 +73,22 @@ def arch_mound_df() -> pl.DataFrame:
 
 def test_scan_geojson(arch_mound_df) -> None:
     lf = scan_spatial(test_data_dir / "arch_mound.geojson")
+    # reading from geojson will automatically add OGC_FID
+    arch_mound_df = arch_mound_df.with_row_index("OGC_FID")
     assert_frame_equal(lf.collect(), arch_mound_df, check_dtypes=False)
 
 
 def test_scan_geojsonsseq(arch_mound_df) -> None:
     lf = scan_spatial(test_data_dir / "arch_mound.geojsonl")
+    # reading from geojsonl will automatically add OGC_FID
+    arch_mound_df = arch_mound_df.with_row_index("OGC_FID")
     assert_frame_equal(lf.collect(), arch_mound_df, check_dtypes=False)
 
 
 def test_scan_gpkg(arch_mound_df) -> None:
     lf = scan_spatial(test_data_gpkg, layer="arch_mound")
+    # reading from geopackage will automatically read fids
+    arch_mound_df = arch_mound_df.with_row_index("fid").with_columns(pl.col("fid")+1)
     assert_frame_equal(lf.collect(), arch_mound_df, check_dtypes=False)
 
 
