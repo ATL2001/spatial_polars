@@ -10,7 +10,6 @@ import geoarrow.pyarrow as ga
 from geoarrow.pyarrow import io as gaio
 
 from polars import col as c
-from polars import selectors as cs
 
 from ._utils import validate_cmap_input, validate_width_and_radius_input
 
