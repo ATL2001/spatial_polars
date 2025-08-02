@@ -31,6 +31,19 @@ def test_from_WKB(arch_mound_df: pl.DataFrame) -> None:
     assert_frame_equal(s_df, arch_mound_df)
 
 
+def test_from_WKB_named_geometry(arch_mound_df: pl.DataFrame) -> None:
+    arch_wkb = shapely.Point(-90.18497, 38.62456).wkb
+    monks_mound_wkb = shapely.Point(-90.06211, 38.66072).wkb
+    df = pl.DataFrame(
+        {
+            "Place": ["Gateway Arch", "Monks Mound"],
+            "geometry": [arch_wkb, monks_mound_wkb],
+        }
+    )
+    s_df = SpatialFrame.from_WKB(df, "geometry")
+    assert_frame_equal(s_df, arch_mound_df)
+
+
 def test_from_WKT(arch_mound_df: pl.DataFrame) -> None:
     arch_wkt = shapely.Point(-90.18497, 38.62456).wkt
     monks_mound_wkt = shapely.Point(-90.06211, 38.66072).wkt
@@ -41,4 +54,17 @@ def test_from_WKT(arch_mound_df: pl.DataFrame) -> None:
         }
     )
     s_df = SpatialFrame.from_WKT(df, "wkt")
+    assert_frame_equal(s_df, arch_mound_df)
+
+
+def test_from_WKT_named_geometry(arch_mound_df: pl.DataFrame) -> None:
+    arch_wkt = shapely.Point(-90.18497, 38.62456).wkt
+    monks_mound_wkt = shapely.Point(-90.06211, 38.66072).wkt
+    df = pl.DataFrame(
+        {
+            "Place": ["Gateway Arch", "Monks Mound"],
+            "geometry": [arch_wkt, monks_mound_wkt],
+        }
+    )
+    s_df = SpatialFrame.from_WKT(df, "geometry")
     assert_frame_equal(s_df, arch_mound_df)
