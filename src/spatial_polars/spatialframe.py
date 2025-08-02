@@ -201,7 +201,7 @@ class SpatialFrame:
 
     def to_geoarrow(
         self,
-        geometry_name: List[str]|str = ["geometry"],
+        geometry_name: List[str] | str = ["geometry"],
     ):
         r"""
         Converts the dataframe to geoarrow table.
@@ -260,7 +260,7 @@ class SpatialFrame:
             )
 
         pa_table = self._df.drop(geometry_name).to_arrow()
-        
+
         for this_g_name in geometry_name:
             crs = pyproj.CRS(self._df[this_g_name].struct.field("crs")[0]).to_wkt(
                 version="WKT1_GDAL"
@@ -654,6 +654,7 @@ class SpatialFrame:
 
         """
         from lonboard import viz
+
         geoarrow_table = self.to_geoarrow(geometry_name)
 
         return viz(
@@ -698,7 +699,7 @@ class SpatialFrame:
         visible: bool = True,
         antialiasing: bool = True,
         billboard: bool = False,
-        **kwargs
+        **kwargs,
     ) -> ScatterplotLayer:
         """
         Makes a Lonboard [ScatterplotLayer][lonboard.ScatterplotLayer] from the SpatialFrame.
@@ -927,7 +928,7 @@ class SpatialFrame:
             radius_units=radius_units,
             stroked=stroked,
             visible=visible,
-            **kwargs
+            **kwargs,
         )
         return layer
 
@@ -954,7 +955,7 @@ class SpatialFrame:
         width_max_pixels: Optional[float] = None,
         width_scale: float = 1,
         width_units: Literal["meters", "common", "pixels"] = "meters",
-        **kwargs
+        **kwargs,
     ) -> PathLayer:
         """
         Makes a Lonboard [PathLayer][lonboard.PathLayer] from the SpatialFrame.
@@ -1041,7 +1042,6 @@ class SpatialFrame:
         from lonboard import PathLayer
         from lonboard.colormap import apply_continuous_cmap, apply_categorical_cmap
 
-
         validate_cmap_input(
             self._df, cmap_col, cmap_type, cmap, alpha, normalize_cmap_col
         )
@@ -1094,7 +1094,7 @@ class SpatialFrame:
             width_max_pixels=width_max_pixels,
             width_scale=width_scale,
             width_units=width_units,
-            **kwargs
+            **kwargs,
         )
         return layer
 
@@ -1130,7 +1130,7 @@ class SpatialFrame:
         pickable: bool = True,
         visible: bool = True,
         wireframe: bool = False,
-        **kwargs
+        **kwargs,
     ) -> PolygonLayer:
         """
         Makes a Lonboard [PolygonLayer][lonboard.PolygonLayer] from the SpatialFrame.
@@ -1354,7 +1354,7 @@ class SpatialFrame:
             stroked=stroked,
             visible=visible,
             wireframe=wireframe,
-            **kwargs
+            **kwargs,
         )
         return layer
 
@@ -1502,6 +1502,14 @@ class SpatialFrame:
         """
         crs_wkt = pyproj.CRS.from_user_input(crs).to_wkt()
 
+        if wkb_col == "geometry":
+            return df.with_columns(
+                pl.struct(
+                    c(wkb_col).alias("wkb_geometry"),
+                    pl.lit(crs_wkt, dtype=pl.Categorical).alias("crs"),
+                ).alias("geometry")
+            )
+
         return df.with_columns(
             pl.struct(
                 c(wkb_col).alias("wkb_geometry"),
@@ -1573,6 +1581,15 @@ class SpatialFrame:
         geoms = shapely.from_wkt(df.select(wkt_col).to_series().to_numpy().copy())
         wkb_array = shapely.to_wkb(geoms)
         crs_wkt = pyproj.CRS.from_user_input(crs).to_wkt()
+
+        if wkt_col == "geometry":
+            return df.with_columns(
+                pl.struct(
+                    pl.Series("wkb_geometry", wkb_array, dtype=pl.Binary),
+                    pl.lit(crs_wkt, dtype=pl.Categorical).alias("crs"),
+                ).alias("geometry")
+            )
+
         return df.with_columns(
             pl.struct(
                 pl.Series("wkb_geometry", wkb_array, dtype=pl.Binary),
