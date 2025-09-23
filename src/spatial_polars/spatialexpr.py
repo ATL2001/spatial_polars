@@ -1100,7 +1100,7 @@ class Predicates:
                 is_elementwise=True,
             )
 
-    def equals_exact(self, other, tolerance):
+    def equals_exact(self, other=None, tolerance=None):
         """
         Return True if the geometries are structurally equivalent within a given tolerance.
 
@@ -1141,7 +1141,7 @@ class Predicates:
                 is_elementwise=True,
             )
 
-    def relate_pattern(self, other, pattern):
+    def relate_pattern(self, other=None, pattern=None):
         """
         Return True if the DE-9IM relationship code satisfies the pattern.
 
@@ -1881,7 +1881,7 @@ class LinestringOperations:
                 is_elementwise=True,
             )
 
-    def line_locate_point(self, other, normalized=False):
+    def line_locate_point(self, other=None, normalized=False):
         """
         Return the distance to the line origin of given point.
 
@@ -1939,7 +1939,7 @@ class LinestringOperations:
             is_elementwise=True,
         )
 
-    def shortest_line(self, other):
+    def shortest_line(self, other=None):
         """
         Return the shortest line between two geometries.
 
