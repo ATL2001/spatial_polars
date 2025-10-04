@@ -1,11 +1,12 @@
 import numpy as np
 import polars as pl
 import shapely
-from fixtures import *  # NOQA F403
+from fixtures import *  # NOQA:F403
 from polars.testing import assert_series_equal
 
 
 def test_reproject(arch_mound_df: pl.DataFrame) -> None:
+    """Test reprojections."""
     reprojected_shapely_array = (
         arch_mound_df.select(pl.col("geometry").spatial.reproject(32615))
         .to_series()
@@ -13,7 +14,7 @@ def test_reproject(arch_mound_df: pl.DataFrame) -> None:
     )
 
     expected_array = shapely.points(
-        [(745063.298, 4278874.516), (755632.326, 4283223.681)]
+        [(745063.298, 4278874.516), (755632.326, 4283223.681)],
     )
 
     geoms_match = shapely.equals_exact(reprojected_shapely_array, expected_array, 0.001)
@@ -22,8 +23,9 @@ def test_reproject(arch_mound_df: pl.DataFrame) -> None:
 
 
 def test_distance_scalar(two_points_df: pl.DataFrame) -> None:
+    """Test distance scalar input."""
     distance_s = two_points_df.select(
-        pl.col("geometry").spatial.distance(shapely.Point(0, 1)).alias("distance")
+        pl.col("geometry").spatial.distance(shapely.Point(0, 1)).alias("distance"),
     ).to_series()
 
     expected_s = pl.Series("distance", [1, 1], dtype=pl.Float64)
@@ -32,8 +34,9 @@ def test_distance_scalar(two_points_df: pl.DataFrame) -> None:
 
 
 def test_distance_two_cols(
-    two_points_df: pl.DataFrame, two_more_points_df: pl.DataFrame
+    two_points_df: pl.DataFrame, two_more_points_df: pl.DataFrame,
 ) -> None:
+    """Test distance two column input."""
     df = pl.concat(
         [two_points_df, two_more_points_df.rename({"geometry": "other_geometry"})],
         how="horizontal",
@@ -42,7 +45,7 @@ def test_distance_two_cols(
     distance_s = df.select(
         pl.struct(pl.col("geometry"), pl.col("other_geometry"))
         .spatial.distance()
-        .alias("distance")
+        .alias("distance"),
     ).to_series()
 
     expected_s = pl.Series("distance", [10, 20], dtype=pl.Float64)

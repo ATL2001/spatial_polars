@@ -17,6 +17,7 @@ test_data_gpkg = test_data_dir / "test_data.gpkg"
 
 @pytest.fixture
 def arch_mound_df() -> pl.DataFrame:
+    """Make a dataframe of generic stuff."""
     return pl.DataFrame().with_columns(
         pl.Series("Place", ["Gateway Arch", "Monks Mound"], pl.String),
         pl.Series("f1_Int8", [0, 1], pl.Int8),
@@ -31,7 +32,9 @@ def arch_mound_df() -> pl.DataFrame:
         pl.Series("f1_Float32", [0, 1], pl.Float32),
         pl.Series("f1_Float64", [0, 1], pl.Float64),
         pl.Series(
-            "f1_Date", [datetime.date(2000, 1, 1), datetime.date(2000, 12, 31)], pl.Date
+            "f1_Date",
+            [datetime.date(2000, 1, 1), datetime.date(2000, 12, 31)],
+            pl.Date,
         ),
         pl.Series(
             "f1_DT",
@@ -52,59 +55,66 @@ def arch_mound_df() -> pl.DataFrame:
                 dtype=pl.Binary,
             ),
             pl.lit(
-                pyproj.CRS.from_user_input(4326).to_wkt(), dtype=pl.Categorical
+                pyproj.CRS.from_user_input(4326).to_wkt("WKT2_2019"),
+                dtype=pl.Categorical,
             ).alias("crs"),
         ).alias("geometry"),
     )
 
 
 # def test_scan_shp(arch_mound_df)->None:
-#     # TODO, look into Z values and datetimes.
+#     # TODO(ATL2001): look into Z values and datetimes.
 #     # lf = scan_spatial(test_data_dir / "shp" / "arch_mound.shp")
 #     # assert_frame_equal(lf.collect(), arch_mound_df)
 #     return
 
 # def test_scan_fgb(arch_mound_df)->None:
-#     # TODO, look into row ordering and datetimes.
+#     # TODO(ATL2001): look into row ordering and datetimes.
 #     # lf = scan_spatial(test_data_dir/ "arch_mound.fgb")
 #     # assert_frame_equal(lf, arch_mound_df, check_dtypes=False)
 #     return
 
 
-def test_scan_geojson(arch_mound_df) -> None:
+def test_scan_geojson(arch_mound_df:pl.DataFrame) -> None:
+    """Test scanning geojson."""
     lf = scan_spatial(test_data_dir / "arch_mound.geojson")
     # reading from geojson will automatically add OGC_FID
     arch_mound_df = arch_mound_df.with_row_index("OGC_FID")
     assert_frame_equal(lf.collect(), arch_mound_df, check_dtypes=False)
 
 
-def test_scan_geojsonsseq(arch_mound_df) -> None:
+def test_scan_geojsonsseq(arch_mound_df:pl.DataFrame) -> None:
+    """Test scanning geojsonseq."""
     lf = scan_spatial(test_data_dir / "arch_mound.geojsonl")
     # reading from geojsonl will automatically add OGC_FID
     arch_mound_df = arch_mound_df.with_row_index("OGC_FID")
     assert_frame_equal(lf.collect(), arch_mound_df, check_dtypes=False)
 
 
-def test_scan_gpkg(arch_mound_df) -> None:
+def test_scan_gpkg(arch_mound_df:pl.DataFrame) -> None:
+    """Test scanning geopackage."""
     lf = scan_spatial(test_data_gpkg, layer="arch_mound")
     # reading from geopackage will automatically read fids
-    arch_mound_df = arch_mound_df.with_row_index("fid").with_columns(pl.col("fid")+1)
+    arch_mound_df = arch_mound_df.with_row_index("fid").with_columns(pl.col("fid") + 1)
     assert_frame_equal(lf.collect(), arch_mound_df, check_dtypes=False)
 
 
-def test_scan_geoparquet(arch_mound_df) -> None:
-    lf = scan_spatial(test_data_dir / "arch_mound.parquet")
+def test_scan_geoparquet(arch_mound_df:pl.DataFrame) -> None:
+    """Test scanning geoparquet."""
+    lf = scan_spatial(test_data_dir / "arch_mound2.parquet")
     assert_frame_equal(lf.collect(), arch_mound_df)
 
 
 def test_scan_parquet_bbox() -> None:
+    """Test scanning geoparquet with bbox."""
     # bbox will limit the arch_mound to just the arch row
     arch_bbox = (-90.19, 38.62, -90.07, 38.67)
-    lf = scan_spatial(test_data_dir / "arch_mound.parquet", bbox=arch_bbox)
+    lf = scan_spatial(test_data_dir / "arch_mound2.parquet", bbox=arch_bbox)
     assert lf.select(pl.len()).collect().item() == 1
 
 
 def test_scan_geojson_bbox() -> None:
+    """Test scanning geojson with bbox."""
     # bbox will limit the arch_mound to just the arch row
     arch_bbox = (-90.19, 38.62, -90.07, 38.67)
     lf = scan_spatial(test_data_dir / "arch_mound.geojson", bbox=arch_bbox)
@@ -112,14 +122,16 @@ def test_scan_geojson_bbox() -> None:
 
 
 def test_scan_parquet_mask() -> None:
+    """Test scanning geoparquet with mask."""
     # mask will limit the arch_mound to just the arch row
     arch_bbox = (-90.19, 38.62, -90.07, 38.67)
     arch_mask = shapely.Polygon(shapely.box(*arch_bbox))
-    lf = scan_spatial(test_data_dir / "arch_mound.parquet", mask=arch_mask)
+    lf = scan_spatial(test_data_dir / "arch_mound2.parquet", mask=arch_mask)
     assert lf.select(pl.len()).collect().item() == 1
 
 
 def test_scan_geojson_mask() -> None:
+    """Test scanning geojson with mask."""
     # mask will limit the arch_mound to just the arch row
     arch_bbox = (-90.19, 38.62, -90.07, 38.67)
     arch_mask = shapely.Polygon(shapely.box(*arch_bbox))
@@ -128,12 +140,17 @@ def test_scan_geojson_mask() -> None:
 
 
 def test_scan_subset_parquet_columns() -> None:
+    """Test scanning geoparquet with col subset."""
     # only selecting two columns should result in two columns being read
-    lf = scan_spatial(test_data_dir / "arch_mound.parquet").select("geometry", "Place")
-    assert len(lf.collect_schema()) == 2
+    lf = scan_spatial(test_data_dir / "arch_mound2.parquet").select("geometry", "Place")
+    expected_col_count = 2
+    assert len(lf.collect_schema()) == expected_col_count
+
 
 
 def test_scan_subset_geojson_columns() -> None:
+    """Test scanning geojson with col subset."""
     # only selecting two columns should result in two columns being read
     lf = scan_spatial(test_data_dir / "arch_mound.geojson").select("geometry", "Place")
-    assert len(lf.collect_schema()) == 2
+    expected_col_count = 2
+    assert len(lf.collect_schema()) == expected_col_count

@@ -1,6 +1,6 @@
 [project]
 name = "spatial-polars"
-version = "0.1.5" # dont forget __init__.py and uv lock
+version = "0.2.0" # dont forget __init__.py and uv lock
 description = "A package that extends polars for working with geospatial data."
 readme = "README.md"
 authors = [
@@ -46,4 +46,24 @@ dev = [
     "mkdocstrings[python]>=0.29.1",
     "pytest>=8.3.5",
     "ruff>=0.11.11",
+]
+
+[tool.ruff.lint]
+select = ["ALL"]
+ignore = [
+    "D203",    # incorrect-blank-line-before-class
+    "D213",    # multi-line-summary-second-line
+    "PLR0913", # too-many-arguments
+    "S311",    # suspicious-non-cryptographic-random-usage
+    "TRY003",  # raise-vanilla-args
+    "DTZ001",  # call-datetime-without-tzinfo
+    "TD003",   # missing-todo-link
+    "FIX002",  # line-contains-todo
+]
+[tool.ruff.lint.per-file-ignores]
+"tests/*" = [
+    "S101",    # assert
+    "ERA001",  # commented-out-code
+    "D100",    # undocumented-public-module
+    "D104",    # undocumented-public-package
 ]

@@ -1,31 +1,42 @@
-from __future__ import annotations
-from typing import Any, TYPE_CHECKING, Literal, Optional, List, Tuple, Union
+"""Spatial Polars SpatialFrame.
 
+This module provides a `SpatialFrame` class which enables a "spatial" namespace on
+polars dataframes.
+"""
+
+from __future__ import annotations
+
+import random
+import warnings
+from typing import TYPE_CHECKING, Any, Literal
+
+import geoarrow.pyarrow as ga
 import polars as pl
 import pyogrio
 import pyproj
-import random
 import shapely
-import geoarrow.pyarrow as ga
 from geoarrow.pyarrow import io as gaio
-
+from lonboard import PathLayer, PolygonLayer, ScatterplotLayer, viz
+from lonboard.colormap import apply_categorical_cmap, apply_continuous_cmap
 from polars import col as c
 
 from ._utils import validate_cmap_input, validate_width_and_radius_input
 
 if TYPE_CHECKING:
-    from lonboard import Map, PathLayer, PolygonLayer, ScatterplotLayer
+    from io import BytesIO
+
+    import pyarrow as pa
+    from lonboard import Map
     from lonboard.types.layer import (
         PathLayerKwargs,
         PolygonLayerKwargs,
         ScatterplotLayerKwargs,
     )
     from lonboard.types.map import MapKwargs
-    from io import BytesIO
-    from numpy.typing import NDArray
-    from palettable.palette import Palette
     from matplotlib.colors import Colormap
     from numpy import floating
+    from numpy.typing import NDArray
+    from palettable.palette import Palette
 
 
 __all__ = [
@@ -35,31 +46,33 @@ __all__ = [
 
 @pl.api.register_dataframe_namespace("spatial")
 class SpatialFrame:
+    """Spatial Polars Spatial frame."""
+
     def __init__(self, df: pl.DataFrame) -> None:
+        """For making polars do spatial stuff."""
         self._df = df
 
     def write_spatial(
         self,
         path: str | BytesIO,
-        layer: Optional[str] = None,
-        driver: Optional[str] = None,
+        layer: str | None = None,
+        *,
+        driver: str | None = None,
         geometry_name: str = "geometry",
-        geometry_type: Optional[str] = None,
-        crs: Optional[str] = None,
-        encoding: Optional[str] = None,
+        geometry_type: str | None = None,
+        crs: str | None = None,
+        encoding: str | None = None,
         append: bool = False,
-        dataset_metadata: Optional[dict] = None,
-        layer_metadata: Optional[dict] = None,
-        metadata: Optional[dict] = None,
-        dataset_options: Optional[dict] = None,
-        layer_options: Optional[dict] = None,
+        dataset_metadata: dict | None = None,
+        layer_metadata: dict | None = None,
+        metadata: dict | None = None,
+        dataset_options: dict | None = None,
+        layer_options: dict | None = None,
     ) -> None:
-        r"""
-        Writes the dataframe to a format supported by [pyogrio][].
+        r"""Write the dataframe to a format supported by [pyogrio](https://pyogrio.readthedocs.io/en/latest/supported_formats.html).
 
         Parameters
         ----------
-
         path
             path to output file on writeable file system or an io.BytesIO object to allow writing to memory NOTE: support for writing to memory is limited to specific drivers.
 
@@ -103,7 +116,6 @@ class SpatialFrame:
 
         Examples
         --------
-
         **Writing a shapefile**
         >>> from spatial_polars import read_spatial
         >>> my_shapefile = r"c:\data\roads.shp"
@@ -113,7 +125,7 @@ class SpatialFrame:
         **Writing a geopackage**
         >>> df.spatial.write_spatial(r"C:\random_data\my_geopackage.gpkg", layer="roads")
 
-        """
+        """  # NOQA: E501
         geometries_wkb = (
             self._df[geometry_name].struct.field("wkb_geometry").to_numpy().copy()
         )
@@ -130,7 +142,7 @@ class SpatialFrame:
                 geometry_type = geom.geom_type
             if crs is None:
                 crs = pyproj.CRS(self._df[geometry_name].struct.field("crs")[0]).to_wkt(
-                    version="WKT1_GDAL"
+                    version="WKT1_GDAL",
                 )
 
         pyogrio.write_arrow(
@@ -154,24 +166,20 @@ class SpatialFrame:
         self,
         path: str,
         geometry_name: str = "geometry",
-        crs: Optional[str] = None,
+        *,
         write_bbox: bool = False,
-        write_geometry_types: Optional[bool] = None,
-    ):
-        r"""
-        Writes the dataframe to a geoparquet file.
+        write_geometry_types: bool | None = None,
+    ) -> None:
+        r"""Write the dataframe to a geoparquet file.
 
         Parameters
         ----------
-
         path
             path to output file on writeable file system.
 
         geometry_name
-            The name(s) of the column(s) in the dataframe that will be written with geoarrow metadata.
-
-        crs
-            WKT-encoded CRS of the geometries to be written.  If left as None, the CRS from the geometry column's struct will be used.
+            The name(s) of the column(s) in the dataframe that will be written with
+            geoarrow metadata.
 
         write_bbox
             May be computationally expensive for large input.
@@ -201,16 +209,15 @@ class SpatialFrame:
 
     def to_geoarrow(
         self,
-        geometry_name: List[str] | str = ["geometry"],
-    ):
-        r"""
-        Converts the dataframe to geoarrow table.
+        geometry_name: list[str] | str = "geometry",
+    ) -> pa.Array:
+        r"""Convert the dataframe to geoarrow table.
 
         Parameters
         ----------
-
         geometry_name
-            The name(s) of the column(s) in the dataframe that will be written with geoarrow metadata.
+            The name(s) of the column(s) in the dataframe that will be written with
+            geoarrow metadata.
 
         Note
         ----
@@ -246,24 +253,25 @@ class SpatialFrame:
         bridge: [["F","F","F","F","F",...,"F","F","F","F","F"],["F","F","F","F","F",...,"F","F","F","F","F"],...,["F","F","F","F","F",...,"F","F","F","F","F"],["F","F","F","F","F",...,"F","F","F","F","F"]]
         tunnel: [["F","F","F","F","F",...,"F","F","F","F","F"],["F","F","F","F","F",...,"F","F","F","F","F"],...,["F","F","F","F","F",...,"F","F","F","F","F"],["F","F","F","F","F",...,"F","F","F","F","F"]]
 
-        """
+        """  # NOQA:E501
         # create pyarrow table from the dataframe without the geometry
         if isinstance(geometry_name, str):
             geometry_name = [geometry_name]
 
         no_null_geoms_df = self._df.filter(
-            pl.any_horizontal(pl.col(*geometry_name).is_not_null())
+            pl.any_horizontal(pl.col(*geometry_name).is_not_null()),
         )
         if len(no_null_geoms_df) != len(self._df):
-            Warning(
-                "Dataframe contains null goemetries, rows with null geometries will be discarded."
+            warnings.warn(
+                "Dataframe contains null goemetries, nulls will be discarded.",
+                stacklevel=2,
             )
 
         pa_table = self._df.drop(geometry_name).to_arrow()
 
         for this_g_name in geometry_name:
             crs = pyproj.CRS(self._df[this_g_name].struct.field("crs")[0]).to_wkt(
-                version="WKT1_GDAL"
+                version="WKT2_2019",
             )
 
             # create geoarrow array with crs from the geometry
@@ -292,17 +300,20 @@ class SpatialFrame:
             "contains_properly",
             "dwithin",
         ] = "intersects",
-        distance: Optional[float] = None,
+        distance: float | None = None,
         on: str = "geometry",
-        left_on: Optional[str] = None,
-        right_on: Optional[str] = None,
+        left_on: str | None = None,
+        right_on: str | None = None,
         suffix: str = "_right",
         maintain_order: Literal[
-            "none", "left", "right", "left_right", "right_left"
+            "none",
+            "left",
+            "right",
+            "left_right",
+            "right_left",
         ] = "none",
     ) -> pl.DataFrame:
-        r"""
-        Joins two SpatialFrames based on a spatial predicate.
+        r"""Join two SpatialFrames based on a spatial predicate.
 
         Parameters
         ----------
@@ -328,42 +339,58 @@ class SpatialFrame:
                 Returns rows from the left table that have no match in the right table.
 
         predicate
-            The predicate to use for testing geometries from the tree that are within the input geometry's bounding box.
+            The predicate to use for testing geometries from the tree that are within
+            the input geometry's bounding box.
             * *intersects*
-                Joins rows in the left frame to the right frame if they share any portion of space.
+                Joins rows in the left frame to the right frame if they share any
+                portion of space.
 
             * *within*
-                Joins rows in the left frame to the right if they are completely inside a geometry from the right frame.
+                Joins rows in the left frame to the right if they are completely inside
+                a geometry from the right frame.
 
             * *contains*
-                Joins rows in the left frame to the right if the geometry from the right frame is completely inside the geometry from the left frame
+                Joins rows in the left frame to the right if the geometry from the right
+                frame is completely inside the geometry from the left frame
 
             * *overlaps*
-                Joins rows in the left frame to the right if they have some but not all points/space in common, have the same dimension, and the intersection of the interiors of the two geometries has the same dimension as the geometries themselves.
+                Joins rows in the left frame to the right if they have some but not all
+                points/space in common, have the same dimension, and the intersection of
+                the interiors of the two geometries has the same dimension as the
+                geometries themselves.
 
             * *crosses*
-                Joins rows in the left frame to the right if they have some but not all interior points in common, the intersection is one dimension less than the maximum dimension for the geomtries.
+                Joins rows in the left frame to the right if they have some but not all
+                interior points in common, the intersection is one dimension less than
+                the maximum dimension for the geomtries.
 
             * *touches*
-                Joins rows in the left frame to the right if they only share points on their boundaries.
+                Joins rows in the left frame to the right if they only share points on
+                their boundaries.
 
             * *covers*
-                Joins rows in the left frame to the right if no point of the right geometry is outside of the left geometry.
+                Joins rows in the left frame to the right if no point of the right
+                geometry is outside of the left geometry.
 
 
             * *covered_by*
-                Joins rows in the left frame to the right if no point of the left geometry is outside of the right geometry.
+                Joins rows in the left frame to the right if no point of the left
+                geometry is outside of the right geometry.
 
 
             * *contains_properly*
-                Joins rows in the left frame to the right if the geometry from the right is completely inside the geometry from the left with no common boundary points.
+                Joins rows in the left frame to the right if the geometry from the right
+                is completely inside the geometry from the left with no common boundary
+                points.
 
 
             * *dwithin*
-                Joins rows in the left frame to the right if they are within the given `distance` of one another.
+                Joins rows in the left frame to the right if they are within the given
+                `distance` of one another.
 
         distance
-            Distances around each input geometry to join for the `dwithin` predicate. Required if predicate=`dwithin`.
+            Distances around each input geometry to join for the `dwithin` predicate.
+            Required if predicate=`dwithin`.
 
         on
             Name of the geometry columns in both SpatialFrames.
@@ -398,7 +425,8 @@ class SpatialFrame:
 
         Note
         ----
-        Spatial joins only take into account x/y coodrdinates, any Z values present in the geometries are ignored.
+        Spatial joins only take into account x/y coodrdinates, any Z values present in
+        the geometries are ignored.
 
         Examples
         --------
@@ -446,7 +474,8 @@ class SpatialFrame:
         │ null            ┆ {b"\x01\x02\x00\x00\x00\ ┆ Matteson Subdivision     ┆ {b"\x01\x02\x00\x00\x00\ │
         │                 ┆ x16\x0…                  ┆                          ┆ x1f\x0…                  │
         └─────────────────┴──────────────────────────┴──────────────────────────┴──────────────────────────┘
-        """
+
+        """  # NOQA:E501
         if left_on is None:
             left_on = on
         if right_on is None:
@@ -499,20 +528,24 @@ class SpatialFrame:
         self,
         other: pl.DataFrame,
         how: Literal["left", "inner"] = "inner",
-        max_distance: Optional[float] = None,
+        max_distance: float | None = None,
+        on: str = "geometry",
+        left_on: str | None = None,
+        right_on: str | None = None,
+        suffix: str = "_right",
+        maintain_order: Literal[
+            "none",
+            "left",
+            "right",
+            "left_right",
+            "right_left",
+        ] = "none",
+        *,
         return_distance: bool = False,
         exclusive: bool = False,
         all_matches: bool = True,
-        on: str = "geometry",
-        left_on: Optional[str] = None,
-        right_on: Optional[str] = None,
-        suffix: str = "_right",
-        maintain_order: Literal[
-            "none", "left", "right", "left_right", "right_left"
-        ] = "none",
     ) -> pl.DataFrame:
-        r"""
-        Joins two dataframes based on a spatial distance .
+        r"""Join two dataframes based on a spatial distance.
 
         Parameters
         ----------
@@ -562,9 +595,23 @@ class SpatialFrame:
             * *right_left*
                 First preserves the order of the right DataFrame, then the left.
 
+        return_distance
+            If True, will return distances between joined features.
+
+        exclusive
+            If True, geometries that are equal to the input geometry will not be
+            returned.
+
+        all_matches
+            If True, all equidistant and intersected geometries will be returned for
+            each input geometry. If False, only the first nearest geometry will be
+            returned.
+
         Note
         ----
-        Spatial joins only take into account x/y coodrdinates, any Z values present in the geometries are ignored.
+        Spatial joins only take into account x/y coodrdinates, any Z values present in
+        the geometries are ignored.
+
         """
         if left_on is None:
             left_on = on
@@ -594,7 +641,7 @@ class SpatialFrame:
                 schema={"right_index": pl.Int64, "left_index": pl.Int64},
             )
 
-        joined = (
+        return (
             self._df.with_row_index("left_index")
             .join(
                 tree_query_df,
@@ -612,15 +659,13 @@ class SpatialFrame:
             .drop("right_index", "left_index")
         )
 
-        return joined
-
     def viz(
         self,
         geometry_name: str = "geometry",
-        scatterplot_kwargs: Optional[ScatterplotLayerKwargs] = None,
-        path_kwargs: Optional[PathLayerKwargs] = None,
-        polygon_kwargs: Optional[PolygonLayerKwargs] = None,
-        map_kwargs: Optional[MapKwargs] = None,
+        scatterplot_kwargs: ScatterplotLayerKwargs | None = None,
+        path_kwargs: PathLayerKwargs | None = None,
+        polygon_kwargs: PolygonLayerKwargs | None = None,
+        map_kwargs: MapKwargs | None = None,
     ) -> Map:
         r"""Visualizes the dataframe as a layer in a Lonboard [map][lonboard.Map].
 
@@ -652,9 +697,7 @@ class SpatialFrame:
         >>> df = read_spatial(my_shapefile)
         >>> df.spatial.viz()
 
-        """
-        from lonboard import viz
-
+        """  # NOQA:E501
         geoarrow_table = self.to_geoarrow(geometry_name)
 
         return viz(
@@ -665,44 +708,88 @@ class SpatialFrame:
             map_kwargs=map_kwargs,
         )
 
+    def _make_color_array(
+        self,
+        cmap_col: str,
+        cmap_type: Literal["categorical", "continuous"] | None,
+        cmap: Palette | Colormap | dict | None,
+        alpha: float | NDArray[floating] | None,
+        *,
+        normalize_cmap_col: bool,
+    ) -> NDArray | None:
+        color = None
+        if cmap_col is not None:
+            if cmap_type == "continuous":
+                if normalize_cmap_col:
+                    norm_arr = (
+                        self._df.select(c(cmap_col).spatial.min_max())
+                        .to_series()
+                        .to_numpy()
+                    )
+                else:
+                    norm_arr = self._df.select(c(cmap_col)).to_series().to_numpy()
+                color = apply_continuous_cmap(
+                    norm_arr,
+                    cmap,
+                    alpha=alpha,
+                )
+            elif cmap_type == "categorical":
+                cat_arr = self._df.select(c(cmap_col)).to_series().to_arrow()
+
+                if cmap is None:
+                    cmap = {}
+                    for cat in self._df[cmap_col].unique():
+                        cmap[cat] = [
+                            random.randint(0, 255),
+                            random.randint(0, 255),
+                            random.randint(0, 255),
+                        ]
+
+                color = apply_categorical_cmap(
+                    cat_arr,
+                    cmap,
+                    alpha=alpha,
+                )
+        return color
+
     def to_scatterplotlayer(
         self,
         geometry_name: str = "geometry",
+        *,
         filled: bool = True,
-        fill_color: Union[List, Tuple, None] = None,
-        fill_cmap_col: Optional[str] = None,
-        fill_cmap_type: Union[Literal["categorical", "continuous"], None] = None,
-        fill_cmap: Optional[Union[Palette, Colormap, dict]] = None,
-        fill_alpha: Union[float, int, NDArray[floating], None] = None,
+        fill_color: list | tuple | None = None,
+        fill_cmap_col: str | None = None,
+        fill_cmap_type: Literal["categorical", "continuous"] | None = None,
+        fill_cmap: Palette | Colormap | dict | None = None,
+        fill_alpha: float | NDArray[floating] | None = None,
         fill_normalize_cmap_col: bool = True,
         stroked: bool = True,
-        line_color: Union[List, Tuple, None] = None,
-        line_cmap_col: Optional[str] = None,
-        line_cmap_type: Union[Literal["categorical", "continuous"], None] = None,
-        line_cmap: Optional[Union[Palette, Colormap, dict]] = None,
-        line_alpha: Union[float, int, NDArray[floating], None] = None,
+        line_color: list | tuple | None = None,
+        line_cmap_col: str | None = None,
+        line_cmap_type: Literal["categorical", "continuous"] | None = None,
+        line_cmap: Palette | Colormap | dict | None = None,
+        line_alpha: float | NDArray[floating] | None = None,
         line_normalize_cmap_col: bool = True,
-        line_width: Union[float, int, NDArray[floating], str, None] = 1,
+        line_width: float | NDArray[floating] | str | None = 1,
         line_width_min_pixels: float = 1,
-        line_width_max_pixels: Optional[float] = None,
+        line_width_max_pixels: float | None = None,
         line_width_scale: float = 1,
         line_width_units: Literal["meters", "common", "pixels"] = "meters",
-        radius: Union[float, int, NDArray[floating], str, None] = 1,
-        radius_max_pixels: Optional[float] = None,
+        radius: float | NDArray[floating] | str | None = 1,
+        radius_max_pixels: float | None = None,
         radius_min_pixels: float = 0,
         radius_scale: float = 1,
         radius_units: Literal["meters", "common", "pixels"] = "meters",
         auto_highlight: bool = False,
-        highlight_color=[0, 0, 128, 128],
+        highlight_color: list | tuple = (0, 0, 128, 128),
         opacity: float = 1,
         pickable: bool = True,
         visible: bool = True,
         antialiasing: bool = True,
         billboard: bool = False,
-        **kwargs,
+        **kwargs: dict[str, Any],
     ) -> ScatterplotLayer:
-        """
-        Makes a Lonboard [ScatterplotLayer][lonboard.ScatterplotLayer] from the SpatialFrame.
+        """Make a Lonboard [ScatterplotLayer][lonboard.ScatterplotLayer] from the SpatialFrame.
 
         Parameters
         ----------
@@ -815,87 +902,35 @@ class SpatialFrame:
         ----
         Implementation varies slightly from Lonboard for the setting of color and width to make it easy to use from the SpatialFrame.
 
-
-        """
-        from lonboard import ScatterplotLayer
-        from lonboard.colormap import apply_continuous_cmap, apply_categorical_cmap
-
+        """  # NOQA:E501
         validate_cmap_input(
             self._df,
             fill_cmap_col,
             fill_cmap_type,
             fill_cmap,
-            fill_alpha,
-            fill_normalize_cmap_col,
         )
         validate_cmap_input(
             self._df,
             line_cmap_col,
             line_cmap_type,
             line_cmap,
-            line_alpha,
-            line_normalize_cmap_col,
         )
         validate_width_and_radius_input(self._df, line_width)
         validate_width_and_radius_input(self._df, radius)
-
-        if fill_cmap_col is not None:
-            if fill_cmap_type == "continuous":
-                if fill_normalize_cmap_col:
-                    norm_arr = (
-                        self._df.select(c(fill_cmap_col).spatial.min_max())
-                        .to_series()
-                        .to_numpy()
-                    )
-                else:
-                    norm_arr = self._df.select(c(fill_cmap_col)).to_series().to_numpy()
-                fill_color = apply_continuous_cmap(
-                    norm_arr, fill_cmap, alpha=fill_alpha
-                )
-            elif fill_cmap_type == "categorical":
-                cat_arr = self._df.select(c(fill_cmap_col)).to_series().to_arrow()
-
-                if fill_cmap is None:
-                    fill_cmap = {}
-                    for cat in self._df[fill_cmap_col].unique():
-                        fill_cmap[cat] = [
-                            random.randint(0, 255),
-                            random.randint(0, 255),
-                            random.randint(0, 255),
-                        ]
-
-                fill_color = apply_categorical_cmap(
-                    cat_arr, fill_cmap, alpha=fill_alpha
-                )
-
-        if line_cmap_col is not None:
-            if line_cmap_type == "continuous":
-                if line_normalize_cmap_col:
-                    norm_arr = (
-                        self._df.select(c(line_cmap_col).spatial.min_max())
-                        .to_series()
-                        .to_numpy()
-                    )
-                else:
-                    norm_arr = self._df.select(c(line_cmap_col)).to_series().to_numpy()
-                line_color = apply_continuous_cmap(
-                    norm_arr, line_cmap, alpha=line_alpha
-                )
-            elif line_cmap_type == "categorical":
-                cat_arr = self._df.select(c(line_cmap_col)).to_series().to_arrow()
-
-                if line_cmap is None:
-                    line_cmap = {}
-                    for cat in self._df[line_cmap_col].unique():
-                        line_cmap[cat] = [
-                            random.randint(0, 255),
-                            random.randint(0, 255),
-                            random.randint(0, 255),
-                        ]
-
-                line_color = apply_categorical_cmap(
-                    cat_arr, line_cmap, alpha=line_alpha
-                )
+        fill_color = self._make_color_array(
+            fill_cmap_col,
+            fill_cmap_type,
+            fill_cmap,
+            fill_alpha,
+            normalize_cmap_col = fill_normalize_cmap_col,
+        )
+        line_color = self._make_color_array(
+            line_cmap_col,
+            line_cmap_type,
+            line_cmap,
+            line_alpha,
+            normalize_cmap_col = line_normalize_cmap_col,
+        )
 
         if isinstance(line_width, str):
             line_width = self._df.select(c(line_width)).to_series().to_numpy()
@@ -905,7 +940,7 @@ class SpatialFrame:
 
         geoarrow_table = self.to_geoarrow(geometry_name)
 
-        layer = ScatterplotLayer(
+        return ScatterplotLayer(
             table=geoarrow_table,
             antialiasing=antialiasing,
             auto_highlight=auto_highlight,
@@ -930,35 +965,34 @@ class SpatialFrame:
             visible=visible,
             **kwargs,
         )
-        return layer
 
     def to_pathlayer(
         self,
         geometry_name: str = "geometry",
-        color: Union[List, Tuple, None] = None,
-        cmap_col: Optional[str] = None,
-        cmap_type: Union[Literal["categorical", "continuous"], None] = None,
-        cmap: Optional[Union[Palette, Colormap, dict]] = None,
-        alpha: Union[float, int, NDArray[floating], None] = None,
+        *,
+        color: list | tuple | None = None,
+        cmap_col: str | None = None,
+        cmap_type: Literal["categorical", "continuous"] | None = None,
+        cmap: Palette | Colormap | dict | None = None,
+        alpha: float | NDArray[floating] | None = None,
         normalize_cmap_col: bool = True,
-        width: Union[float, int, NDArray[floating], str, None] = 1,
+        width: float | NDArray[floating] | str | None = 1,
         auto_highlight: bool = False,
         billboard: bool = False,
         cap_rounded: bool = False,
-        highlight_color=[0, 0, 128, 128],
+        highlight_color: list | tuple = (0, 0, 128, 128),
         joint_rounded: bool = False,
         miter_limit: float = 4,
         opacity: float = 1,
         pickable: bool = True,
         visible: bool = True,
         width_min_pixels: float = 1,
-        width_max_pixels: Optional[float] = None,
+        width_max_pixels: float | None = None,
         width_scale: float = 1,
         width_units: Literal["meters", "common", "pixels"] = "meters",
-        **kwargs,
+        **kwargs: dict[str, Any],
     ) -> PathLayer:
-        """
-        Makes a Lonboard [PathLayer][lonboard.PathLayer] from the SpatialFrame.
+        """Make a Lonboard [PathLayer][lonboard.PathLayer] from the SpatialFrame.
 
         Parameters
         ----------
@@ -1037,47 +1071,28 @@ class SpatialFrame:
         ----
         Implementation varies slightly from Lonboard for the setting of color and width to make it easy to use from the SpatialFrame.
 
-
-        """
-        from lonboard import PathLayer
-        from lonboard.colormap import apply_continuous_cmap, apply_categorical_cmap
-
+        """  # NOQA:E501
         validate_cmap_input(
-            self._df, cmap_col, cmap_type, cmap, alpha, normalize_cmap_col
+            self._df,
+            cmap_col,
+            cmap_type,
+            cmap,
         )
         validate_width_and_radius_input(self._df, width)
-
-        if cmap_col is not None:
-            if cmap_type == "continuous":
-                if normalize_cmap_col:
-                    norm_arr = (
-                        self._df.select(c(cmap_col).spatial.min_max())
-                        .to_series()
-                        .to_numpy()
-                    )
-                else:
-                    norm_arr = self._df.select(c(cmap_col)).to_series().to_numpy()
-                color = apply_continuous_cmap(norm_arr, cmap, alpha=alpha)
-            elif cmap_type == "categorical":
-                cat_arr = self._df.select(c(cmap_col)).to_series().to_arrow()
-
-                if cmap is None:
-                    cmap = {}
-                    for cat in self._df[cmap_col].unique():
-                        cmap[cat] = [
-                            random.randint(0, 255),
-                            random.randint(0, 255),
-                            random.randint(0, 255),
-                        ]
-
-                color = apply_categorical_cmap(cat_arr, cmap, alpha=alpha)
+        color = self._make_color_array(
+            cmap_col,
+            cmap_type,
+            cmap,
+            alpha,
+            normalize_cmap_col = normalize_cmap_col,
+        )
 
         if isinstance(width, str):
             width = self._df.select(c(width)).to_series().to_numpy()
 
         geoarrow_table = self.to_geoarrow(geometry_name)
 
-        layer = PathLayer(
+        return PathLayer(
             table=geoarrow_table,
             auto_highlight=auto_highlight,
             billboard=billboard,
@@ -1096,44 +1111,43 @@ class SpatialFrame:
             width_units=width_units,
             **kwargs,
         )
-        return layer
 
     def to_polygonlayer(
         self,
         geometry_name: str = "geometry",
+        *,
         filled: bool = True,
-        fill_color: Union[List, Tuple, None] = None,
-        fill_cmap_col: Optional[str] = None,
-        fill_cmap_type: Union[Literal["categorical", "continuous"], None] = None,
-        fill_cmap: Optional[Union[Palette, Colormap, dict]] = None,
-        fill_alpha: Union[float, int, NDArray[floating], None] = None,
+        fill_color: list | tuple | None = None,
+        fill_cmap_col: str | None = None,
+        fill_cmap_type: Literal["categorical", "continuous"] | None = None,
+        fill_cmap: Palette | Colormap | dict | None = None,
+        fill_alpha: float | NDArray[floating] | None = None,
         fill_normalize_cmap_col: bool = True,
         stroked: bool = True,
-        line_color: Union[List, Tuple, None] = None,
-        line_cmap_col: Optional[str] = None,
-        line_cmap_type: Union[Literal["categorical", "continuous"], None] = None,
-        line_cmap: Optional[Union[Palette, Colormap, dict]] = None,
-        line_alpha: Union[float, int, NDArray[floating], None] = None,
+        line_color: list | tuple | None = None,
+        line_cmap_col: str | None = None,
+        line_cmap_type: Literal["categorical", "continuous"] | None = None,
+        line_cmap: Palette | Colormap | dict | None = None,
+        line_alpha: float | NDArray[floating] | None = None,
         line_normalize_cmap_col: bool = True,
-        line_width: Union[float, int, NDArray[floating], str, None] = 1,
+        line_width: float | NDArray[floating] | str | None = 1,
         line_joint_rounded: bool = False,
         line_miter_limit: float = 4,
         line_width_min_pixels: float = 1,
-        line_width_max_pixels: Optional[float] = None,
+        line_width_max_pixels: float | None = None,
         line_width_scale: float = 1,
         line_width_units: Literal["meters", "common", "pixels"] = "meters",
-        elevation: Union[float, int, NDArray[floating], str, None] = None,
+        elevation: float | NDArray[floating] | str | None = None,
         elevation_scale: float = 1,
         auto_highlight: bool = False,
-        highlight_color=[0, 0, 128, 128],
+        highlight_color: list | tuple = (0, 0, 128, 128),
         opacity: float = 1,
         pickable: bool = True,
         visible: bool = True,
         wireframe: bool = False,
-        **kwargs,
+        **kwargs: dict[str, Any],
     ) -> PolygonLayer:
-        """
-        Makes a Lonboard [PolygonLayer][lonboard.PolygonLayer] from the SpatialFrame.
+        """Make a Lonboard [PolygonLayer][lonboard.PolygonLayer] from the SpatialFrame.
 
         Parameters
         ----------
@@ -1241,85 +1255,35 @@ class SpatialFrame:
         ----
         Implementation varies slightly from Lonboard for the setting of color and width to make it easy to use from the SpatialFrame.
 
-        """
-        from lonboard import PolygonLayer
-        from lonboard.colormap import apply_continuous_cmap, apply_categorical_cmap
-
+        """  # NOQA:E501
         validate_cmap_input(
             self._df,
             fill_cmap_col,
             fill_cmap_type,
             fill_cmap,
-            fill_alpha,
-            fill_normalize_cmap_col,
         )
         validate_cmap_input(
             self._df,
             line_cmap_col,
             line_cmap_type,
             line_cmap,
-            line_alpha,
-            line_normalize_cmap_col,
         )
         validate_width_and_radius_input(self._df, line_width)
 
-        if fill_cmap_col is not None:
-            if fill_cmap_type == "continuous":
-                if fill_normalize_cmap_col:
-                    norm_arr = (
-                        self._df.select(c(fill_cmap_col).spatial.min_max())
-                        .to_series()
-                        .to_numpy()
-                    )
-                else:
-                    norm_arr = self._df.select(c(fill_cmap_col)).to_series().to_numpy()
-                fill_color = apply_continuous_cmap(
-                    norm_arr, fill_cmap, alpha=fill_alpha
-                )
-            elif fill_cmap_type == "categorical":
-                cat_arr = self._df.select(c(fill_cmap_col)).to_series().to_arrow()
-
-                if fill_cmap is None:
-                    fill_cmap = {}
-                    for cat in self._df[fill_cmap_col].unique():
-                        fill_cmap[cat] = [
-                            random.randint(0, 255),
-                            random.randint(0, 255),
-                            random.randint(0, 255),
-                        ]
-
-                fill_color = apply_categorical_cmap(
-                    cat_arr, fill_cmap, alpha=fill_alpha
-                )
-
-        if line_cmap_col is not None:
-            if line_cmap_type == "continuous":
-                if line_normalize_cmap_col:
-                    norm_arr = (
-                        self._df.select(c(line_cmap_col).spatial.min_max())
-                        .to_series()
-                        .to_numpy()
-                    )
-                else:
-                    norm_arr = self._df.select(c(line_cmap_col)).to_series().to_numpy()
-                line_color = apply_continuous_cmap(
-                    norm_arr, line_cmap, alpha=line_alpha
-                )
-            elif line_cmap_type == "categorical":
-                cat_arr = self._df.select(c(line_cmap_col)).to_series().to_arrow()
-
-                if line_cmap is None:
-                    line_cmap = {}
-                    for cat in self._df[line_cmap_col].unique():
-                        line_cmap[cat] = [
-                            random.randint(0, 255),
-                            random.randint(0, 255),
-                            random.randint(0, 255),
-                        ]
-
-                line_color = apply_categorical_cmap(
-                    cat_arr, line_cmap, alpha=line_alpha
-                )
+        fill_color = self._make_color_array(
+            fill_cmap_col,
+            fill_cmap_type,
+            fill_cmap,
+            fill_alpha,
+            normalize_cmap_col = fill_normalize_cmap_col,
+        )
+        line_color = self._make_color_array(
+            line_cmap_col,
+            line_cmap_type,
+            line_cmap,
+            line_alpha,
+            normalize_cmap_col = line_normalize_cmap_col,
+        )
 
         if isinstance(line_width, str):
             line_width = self._df.select(c(line_width)).to_series().to_numpy()
@@ -1332,7 +1296,7 @@ class SpatialFrame:
 
         geoarrow_table = self.to_geoarrow(geometry_name)
 
-        layer = PolygonLayer(
+        return PolygonLayer(
             table=geoarrow_table,
             auto_highlight=auto_highlight,
             elevation_scale=elevation_scale,
@@ -1356,17 +1320,21 @@ class SpatialFrame:
             wireframe=wireframe,
             **kwargs,
         )
-        return layer
 
     @staticmethod
     def from_point_coords(
-        df, x_col: str, y_col: str, z_col: Optional[str] = None, crs: Any = 4326
-    ):
-        r"""
-        Creates a SpatialFrame from a polars DataFrame with x/y/(z) columns.
+        df: pl.DataFrame,
+        x_col: str,
+        y_col: str,
+        z_col: str | None = None,
+        crs: Any = 4326,  # NOQA:ANN401
+    ) -> pl.DataFrame:
+        r"""Create a SpatialFrame from a polars DataFrame with x/y/(z) columns.
 
         Parameters
         ----------
+        df
+            The dataframe which contains the data from which to create the SpatialFrame.
 
         x_col
             The name of the column in the DataFrame which holds the X coordinates.
@@ -1390,11 +1358,11 @@ class SpatialFrame:
 
             CRS WKT string
 
-            An authority string [i.e. ‘epsg:4326’]
+            An authority string [i.e. `epsg:4326`]
 
             An EPSG integer code [i.e. 4326]
 
-            A tuple of (“auth_name”: “auth_code”) [i.e (‘epsg’, ‘4326’)]
+            A tuple of (“auth_name”: “auth_code”) [i.e (`epsg`, `4326`)]
 
             An object with a to_wkt method.
 
@@ -1424,8 +1392,7 @@ class SpatialFrame:
         │ Monks Mound  ┆ {b"\x01\x01\x00\x00\x80K\xb08\… │
         └──────────────┴─────────────────────────────────┘
 
-
-        """
+        """  # NOQA:E501
         coord_cols = [x_col, y_col]
         if z_col is not None:
             coord_cols.append(z_col)
@@ -1437,16 +1404,18 @@ class SpatialFrame:
             pl.struct(
                 pl.Series("wkb_geometry", wkb_array, dtype=pl.Binary),
                 pl.lit(crs_wkt, dtype=pl.Categorical).alias("crs"),
-            ).alias("geometry")
+            ).alias("geometry"),
         )
 
     @staticmethod
-    def from_WKB(df: pl.DataFrame, wkb_col: str, crs: Any = 4326):
-        r"""
-        Creates a SpatialFrame from a polars DataFrame with a column of WKB.
+    def from_WKB(df: pl.DataFrame, wkb_col: str, crs: Any = 4326) -> pl.DataFrame:  # NOQA:ANN401 N802
+        r"""Create a SpatialFrame from a polars DataFrame with a column of WKB.
 
         Parameters
         ----------
+        df
+            The dataframe which contains the data from which to create the SpatialFrame.
+
         wkb_col
             The name of the column in the DataFrame which holds geometry WKB.
 
@@ -1499,7 +1468,7 @@ class SpatialFrame:
         └──────────────┴─────────────────────────────────┘
 
 
-        """
+        """  # NOQA:E501
         crs_wkt = pyproj.CRS.from_user_input(crs).to_wkt()
 
         if wkb_col == "geometry":
@@ -1507,23 +1476,24 @@ class SpatialFrame:
                 pl.struct(
                     c(wkb_col).alias("wkb_geometry"),
                     pl.lit(crs_wkt, dtype=pl.Categorical).alias("crs"),
-                ).alias("geometry")
+                ).alias("geometry"),
             )
 
         return df.with_columns(
             pl.struct(
                 c(wkb_col).alias("wkb_geometry"),
                 pl.lit(crs_wkt, dtype=pl.Categorical).alias("crs"),
-            ).alias("geometry")
+            ).alias("geometry"),
         ).drop(c(wkb_col))
 
     @staticmethod
-    def from_WKT(df, wkt_col: str, crs: Any = 4326):
-        r"""
-        Creates a SpatialFrame from a polars DataFrame with a column of WKT.
+    def from_WKT(df: pl.DataFrame, wkt_col: str, crs: Any = 4326) -> pl.DataFrame:  # NOQA:ANN401 N802
+        r"""Create a SpatialFrame from a polars DataFrame with a column of WKT.
 
         Parameters
         ----------
+        df
+            The dataframe which contains the data from which to create the SpatialFrame.
 
         wkt_col
             The name of the column in the DataFrame which holds geometry WKT.
@@ -1541,11 +1511,11 @@ class SpatialFrame:
 
             CRS WKT string
 
-            An authority string [i.e. ‘epsg:4326’]
+            An authority string [i.e. `epsg:4326`]
 
             An EPSG integer code [i.e. 4326]
 
-            A tuple of (“auth_name”: “auth_code”) [i.e (‘epsg’, ‘4326’)]
+            A tuple of (“auth_name”: “auth_code”) [i.e (`epsg`, `4326`)]
 
             An object with a to_wkt method.
 
@@ -1576,8 +1546,7 @@ class SpatialFrame:
         │ Monks Mound  ┆ {b"\x01\x01\x00\x00\x80K\xb08\… │
         └──────────────┴─────────────────────────────────┘
 
-
-        """
+        """  # NOQA:E501
         geoms = shapely.from_wkt(df.select(wkt_col).to_series().to_numpy().copy())
         wkb_array = shapely.to_wkb(geoms)
         crs_wkt = pyproj.CRS.from_user_input(crs).to_wkt()
@@ -1587,12 +1556,12 @@ class SpatialFrame:
                 pl.struct(
                     pl.Series("wkb_geometry", wkb_array, dtype=pl.Binary),
                     pl.lit(crs_wkt, dtype=pl.Categorical).alias("crs"),
-                ).alias("geometry")
+                ).alias("geometry"),
             )
 
         return df.with_columns(
             pl.struct(
                 pl.Series("wkb_geometry", wkb_array, dtype=pl.Binary),
                 pl.lit(crs_wkt, dtype=pl.Categorical).alias("crs"),
-            ).alias("geometry")
+            ).alias("geometry"),
         ).drop(c(wkt_col))
