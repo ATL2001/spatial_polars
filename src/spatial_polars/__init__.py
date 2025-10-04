@@ -1,15 +1,17 @@
-from .io import spatial_series_dtype, scan_spatial, read_spatial
+"""Spatial Polars."""
+
+from .io import read_spatial, scan_spatial, spatial_series_dtype
+from .spatialexpr import SpatialExpr
 from .spatialframe import SpatialFrame
 from .spatialseries import SpatialSeries
-from .spatialexpr import SpatialExpr
 
 __all__ = [
-    "spatial_series_dtype",
-    "scan_spatial",
-    "read_spatial",
+    "SpatialExpr",
     "SpatialFrame",
     "SpatialSeries",
-    "SpatialExpr",
+    "read_spatial",
+    "scan_spatial",
+    "spatial_series_dtype",
 ]
 
-__version__ = "0.1.5" # dont forget pyproject.toml and uv lock
+__version__ = "0.2.0"  # dont forget pyproject.toml and uv lock
