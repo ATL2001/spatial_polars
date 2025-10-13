@@ -2286,7 +2286,11 @@ class SpatialExpr(
         return (self._expr - self._expr.min()) / (self._expr.max() - self._expr.min())
 
     def to_geometrycollection(self) -> pl.Expr:
-        """Take a list of geometry structs, return a geometry collection struct."""
+        """Take a list of geometry structs, return a geometry collection struct.
+
+        This expression is intended to be used primarily to aggregate geometries after a
+        group_by context.
+        """
         return self._expr.map_batches(
             lambda s: s.spatial.to_geometrycollection(),
             return_dtype=spatial_series_dtype,
