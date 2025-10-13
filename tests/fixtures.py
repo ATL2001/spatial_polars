@@ -22,7 +22,8 @@ def arch_mound_df() -> pl.DataFrame:
                 dtype=pl.Binary,
             ),
             pl.lit(
-                pyproj.CRS.from_user_input(4326).to_wkt(), dtype=pl.Categorical,
+                pyproj.CRS.from_user_input(4326).to_wkt(),
+                dtype=pl.Categorical,
             ).alias("crs"),
         ).alias("geometry"),
     )
@@ -45,7 +46,8 @@ def two_points_df() -> pl.DataFrame:
                 dtype=pl.Binary,
             ),
             pl.lit(
-                pyproj.CRS.from_user_input(4326).to_wkt(), dtype=pl.Categorical,
+                pyproj.CRS.from_user_input(4326).to_wkt(),
+                dtype=pl.Categorical,
             ).alias("crs"),
         ).alias("geometry"),
     )
@@ -68,7 +70,8 @@ def two_more_points_df() -> pl.DataFrame:
                 dtype=pl.Binary,
             ),
             pl.lit(
-                pyproj.CRS.from_user_input(4326).to_wkt(), dtype=pl.Categorical,
+                pyproj.CRS.from_user_input(4326).to_wkt(),
+                dtype=pl.Categorical,
             ).alias("crs"),
         ).alias("geometry"),
     )

@@ -1,8 +1,9 @@
 import numpy as np
 import polars as pl
 import shapely
-from fixtures import *  # NOQA:F403
 from polars.testing import assert_series_equal
+
+from .fixtures import *  # NOQA:F403
 
 
 def test_reproject(arch_mound_df: pl.DataFrame) -> None:
@@ -34,7 +35,8 @@ def test_distance_scalar(two_points_df: pl.DataFrame) -> None:
 
 
 def test_distance_two_cols(
-    two_points_df: pl.DataFrame, two_more_points_df: pl.DataFrame,
+    two_points_df: pl.DataFrame,
+    two_more_points_df: pl.DataFrame,
 ) -> None:
     """Test distance two column input."""
     df = pl.concat(
