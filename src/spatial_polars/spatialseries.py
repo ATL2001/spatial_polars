@@ -30,11 +30,13 @@ class SpatialSeries:
 
     def get_crs(self) -> str:
         """Return the CRS WKT from a spatial series."""
+        if self._s.dtype == pl.List(pl.Struct):
+            return self._s.list.eval(pl.element().struct.field("crs")).list.get(0)[0]
         return self._s.struct.field("crs")[0]
 
     def to_shapely_array(self) -> np.array:
         """Return a numpy array of shapely geometry objects from a spatial series."""
-        geom_series = self._s.struct.field("wkb_geometry")
+        geom_series = self._s.struct.field("wkb_geometry").to_numpy()
         return shapely.from_wkb(geom_series)
 
     @staticmethod
@@ -62,6 +64,56 @@ class SpatialSeries:
         crs = pyproj.CRS(crs_to)
         crs_wkt = crs.to_wkt()
         return SpatialSeries._to_spatialseries(result, crs_wkt)
+
+    def to_geometrycollection(self) -> pl.Series:
+        """Take a list of geometry structs, return a geometry collection struct.
+
+        This method is intended to be used primarily to aggregate geometries after a
+        group_by context.
+        """
+        crs_wkt = self._s.spatial.get_crs()
+        if self._s.dtype == pl.List(pl.Struct):
+            s_arrs = self._s.list.eval(pl.element().struct.field("wkb_geometry"))
+            result = s_arrs.map_elements(
+                lambda x: shapely.to_wkb(
+                    shapely.GeometryCollection(shapely.from_wkb(x)),
+                ),
+                return_dtype=pl.Binary,
+            )
+        else:
+            s_arr = self.to_shapely_array()
+            result = shapely.to_wkb(shapely.GeometryCollection(shapely.from_wkb(s_arr)))
+        return SpatialSeries._to_spatialseries(result, crs_wkt)
+
+    def from_WKB(self, crs: Any = 4326) -> pl.Series:  #  NOQA:ANN401, N802
+        """Return a spatial series from a series of WKB.
+
+        Parameters
+        ----------
+        crs
+            The coordinate reference system of the data.
+
+        """
+        crs_wkt = pyproj.CRS.from_user_input(crs).to_wkt()
+        crs = pl.lit(crs_wkt, dtype=pl.Categorical).alias("crs")
+        ss = pl.struct(self._s.alias("wkb_geometry"), crs).alias("geometry")
+        return pl.DataFrame().with_columns(ss).to_series()
+
+    def from_WKT(self, crs: Any = 4326) -> pl.Series:  #  NOQA:ANN401, N802
+        """Return a spatial series from a series of WKB.
+
+        Parameters
+        ----------
+        crs
+            The coordinate reference system of the data.
+
+        """
+        crs_wkt = pyproj.CRS.from_user_input(crs).to_wkt()
+        crs = pl.lit(crs_wkt, dtype=pl.Categorical).alias("crs")
+        geoms = shapely.from_wkt(self._s.to_numpy().copy())
+        wkb_array = shapely.to_wkb(geoms)
+        ss = pl.struct(pl.Series("wkb_geometry", wkb_array), crs).alias("geometry")
+        return pl.DataFrame().with_columns(ss).to_series()
 
     # Measurement
     def area(self) -> array:
@@ -423,7 +475,9 @@ class SpatialSeries:
         return shapely.equals_exact(s_arr, other, tolerance)
 
     def relate_pattern(
-        self, other: pl.Series | shapely.Geometry, pattern: str,
+        self,
+        other: pl.Series | shapely.Geometry,
+        pattern: str,
     ) -> array:
         """Return True if the DE-9IM relationship code satisfies the pattern.
 
@@ -980,13 +1034,18 @@ class SpatialSeries:
         crs_wkt = self._s.spatial.get_crs()
         result = shapely.to_wkb(
             shapely.line_interpolate_point(
-                s_arr, distance=distance, normalized=normalized,
+                s_arr,
+                distance=distance,
+                normalized=normalized,
             ),
         )
         return SpatialSeries._to_spatialseries(result, crs_wkt)
 
     def line_locate_point(
-        self, other: pl.Series | shapely.Geometry, *, normalized:bool=False,
+        self,
+        other: pl.Series | shapely.Geometry,
+        *,
+        normalized: bool = False,
     ) -> array:
         """Return the distance to the line origin of given point.
 
@@ -998,7 +1057,7 @@ class SpatialSeries:
             other = other.to_shapely_array()
         return shapely.line_locate_point(s_arr, other, normalized=normalized)
 
-    def line_merge(self, *, directed:bool=False) -> pl.Series:
+    def line_merge(self, *, directed: bool = False) -> pl.Series:
         """Return (Multi)LineStrings formed by combining the lines in a MultiLineString.
 
         Lines are joined together at their endpoints in case two lines are intersecting.
