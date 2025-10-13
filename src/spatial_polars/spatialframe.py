@@ -60,7 +60,6 @@ class SpatialFrame:
         driver: str | None = None,
         geometry_name: str = "geometry",
         geometry_type: str | None = None,
-        crs: str | None = None,
         encoding: str | None = None,
         append: bool = False,
         dataset_metadata: dict | None = None,
@@ -89,9 +88,6 @@ class SpatialFrame:
             The geometry type of the written layer. Currently, this needs to be specified explicitly when creating a new layer with geometries. Possible values are: “Unknown”, “Point”, “LineString”, “Polygon”, “MultiPoint”, “MultiLineString”, “MultiPolygon” “GeometryCollection”, “Point Z”, “LineString Z”, “Polygon Z”, “MultiPoint Z”, “MultiLineString Z”, “MultiPolygon Z” or “GeometryCollection Z”.
 
             This parameter does not modify the geometry, but it will try to force the layer type of the output file to this value. Use this parameter with caution because using a wrong layer geometry type may result in errors when writing the file, may be ignored by the driver, or may result in invalid files.
-
-        crs
-            WKT-encoded CRS of the geometries to be written.    If left as None, the CRS from the geometry column's struct will be used.
 
         encoding
             Only used for the .dbf file of ESRI Shapefiles. If not specified, uses the default locale.
@@ -131,20 +127,15 @@ class SpatialFrame:
         )
         pa_table = (
             self._df.drop(geometry_name)
-            .with_columns(pl.Series("geometry", geometries_wkb, dtype=pl.Binary))
+            .with_columns(pl.Series(geometry_name, geometries_wkb, dtype=pl.Binary))
             .to_arrow()
         )
-
-        if any([geometry_type is None, crs is None]):
+        if geometry_type is None:
             geom_wkb = geometries_wkb[0]
             geom = shapely.from_wkb(geom_wkb)
-            if geometry_type is None:
-                geometry_type = geom.geom_type
-            if crs is None:
-                crs = pyproj.CRS(self._df[geometry_name].struct.field("crs")[0]).to_wkt(
-                    version="WKT1_GDAL",
-                )
+            geometry_type = geom.geom_type
 
+        crs = self._df[geometry_name].struct.field("crs")[0]
         pyogrio.write_arrow(
             pa_table,
             path=path,
@@ -486,10 +477,10 @@ class SpatialFrame:
         other_geometries = other[right_on].spatial.to_shapely_array()
 
         tree_query_df = pl.DataFrame(
-            shapely.STRtree(self_geometries)
-            .query(other_geometries, predicate=predicate, distance=distance)
+            shapely.STRtree(other_geometries)
+            .query(self_geometries, predicate=predicate, distance=distance)
             .T,
-            schema={"right_index": pl.Int64, "left_index": pl.Int64},
+            schema={"left_index": pl.Int64, "right_index": pl.Int64},
         )
 
         if how in ["left", "right", "full", "inner"]:
@@ -657,6 +648,88 @@ class SpatialFrame:
                 maintain_order=maintain_order,
             )
             .drop("right_index", "left_index")
+        )
+
+    def centroid_knn_join(
+        self,
+        other: pl.DataFrame,
+        k: int,
+        on: str = "geometry",
+        left_on: str | None = None,
+        right_on: str | None = None,
+        suffix: str = "_right",
+    ) -> pl.DataFrame:
+        r"""Perform K nearest neighbors join of centroids of geometries in two frames.
+
+        Parameters
+        ----------
+        other
+            SpatialFrame to join with.
+
+        k
+            The number of nearest neighbors to include.
+
+        on
+            Name of the geometry columns in both SpatialFrames.
+
+        left_on
+            Name of the geometry column in the left SpatialFrame for the spatial join.
+
+        right_on
+            Name of the geometry column in the right SpatialFrame for the spatial join.
+
+        suffix
+            Suffix to append to columns with a duplicate name.
+
+        Notes
+        -----
+            As the name implies, this KNN join method only takes into account the
+            centroids of the geometries in both dataframes, it may not be suitable
+            for joining the nearest lines or polygons depending on the distribution of
+            the geometries.
+
+            This method relies on scipy.spatial's KDTree to find the neighbors.
+
+        """
+        from scipy.spatial import KDTree  # NOQA:PLC0415
+
+        if left_on is None:
+            left_on = on
+        if right_on is None:
+            right_on = on
+
+        self_df = self._df
+        self_centroids = shapely.centroid(self_df[left_on].spatial.to_shapely_array())
+        other_centroids = shapely.centroid(other[right_on].spatial.to_shapely_array())
+
+        self_coords = shapely.get_coordinates(self_centroids)
+        other_coords = shapely.get_coordinates(other_centroids)
+
+        tree = KDTree(other_coords)
+        query_result = tree.query(self_coords, k=k)
+
+        return (
+            pl.LazyFrame(query_result[1])
+            .with_row_index("self_index")
+            .unpivot(
+                index="self_index",
+                value_name="other_index",
+            )
+            .drop(
+                "variable",
+            )
+            .join(
+                self_df.lazy().with_row_index("self_index"),
+                how="left",
+                on="self_index",
+            )
+            .join(
+                other.lazy().with_row_index("other_index"),
+                how="left",
+                on="other_index",
+                suffix=suffix,
+            )
+            .collect(engine="streaming")
         )
 
     def viz(
@@ -922,14 +995,14 @@ class SpatialFrame:
             fill_cmap_type,
             fill_cmap,
             fill_alpha,
-            normalize_cmap_col = fill_normalize_cmap_col,
+            normalize_cmap_col=fill_normalize_cmap_col,
         )
         line_color = self._make_color_array(
             line_cmap_col,
             line_cmap_type,
             line_cmap,
             line_alpha,
-            normalize_cmap_col = line_normalize_cmap_col,
+            normalize_cmap_col=line_normalize_cmap_col,
         )
 
         if isinstance(line_width, str):
@@ -1084,7 +1157,7 @@ class SpatialFrame:
             cmap_type,
             cmap,
             alpha,
-            normalize_cmap_col = normalize_cmap_col,
+            normalize_cmap_col=normalize_cmap_col,
         )
 
         if isinstance(width, str):
@@ -1275,14 +1348,14 @@ class SpatialFrame:
             fill_cmap_type,
             fill_cmap,
             fill_alpha,
-            normalize_cmap_col = fill_normalize_cmap_col,
+            normalize_cmap_col=fill_normalize_cmap_col,
         )
         line_color = self._make_color_array(
             line_cmap_col,
             line_cmap_type,
             line_cmap,
             line_alpha,
-            normalize_cmap_col = line_normalize_cmap_col,
+            normalize_cmap_col=line_normalize_cmap_col,
         )
 
         if isinstance(line_width, str):
@@ -1469,22 +1542,9 @@ class SpatialFrame:
 
 
         """  # NOQA:E501
-        crs_wkt = pyproj.CRS.from_user_input(crs).to_wkt()
-
-        if wkb_col == "geometry":
-            return df.with_columns(
-                pl.struct(
-                    c(wkb_col).alias("wkb_geometry"),
-                    pl.lit(crs_wkt, dtype=pl.Categorical).alias("crs"),
-                ).alias("geometry"),
-            )
-
         return df.with_columns(
-            pl.struct(
-                c(wkb_col).alias("wkb_geometry"),
-                pl.lit(crs_wkt, dtype=pl.Categorical).alias("crs"),
-            ).alias("geometry"),
-        ).drop(c(wkb_col))
+            c(wkb_col).spatial.from_WKB(crs),
+        )
 
     @staticmethod
     def from_WKT(df: pl.DataFrame, wkt_col: str, crs: Any = 4326) -> pl.DataFrame:  # NOQA:ANN401 N802
@@ -1547,21 +1607,6 @@ class SpatialFrame:
         └──────────────┴─────────────────────────────────┘
 
         """  # NOQA:E501
-        geoms = shapely.from_wkt(df.select(wkt_col).to_series().to_numpy().copy())
-        wkb_array = shapely.to_wkb(geoms)
-        crs_wkt = pyproj.CRS.from_user_input(crs).to_wkt()
-
-        if wkt_col == "geometry":
-            return df.with_columns(
-                pl.struct(
-                    pl.Series("wkb_geometry", wkb_array, dtype=pl.Binary),
-                    pl.lit(crs_wkt, dtype=pl.Categorical).alias("crs"),
-                ).alias("geometry"),
-            )
-
         return df.with_columns(
-            pl.struct(
-                pl.Series("wkb_geometry", wkb_array, dtype=pl.Binary),
-                pl.lit(crs_wkt, dtype=pl.Categorical).alias("crs"),
-            ).alias("geometry"),
-        ).drop(c(wkt_col))
+            c(wkt_col).spatial.from_WKT(crs),
+        )
