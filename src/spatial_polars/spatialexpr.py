@@ -2284,3 +2284,39 @@ class SpatialExpr(
     def min_max(self) -> pl.Expr:
         """Normalize a value in a column to be 0-1."""
         return (self._expr - self._expr.min()) / (self._expr.max() - self._expr.min())
+
+    def to_geometrycollection(self) -> pl.Expr:
+        """Take a list of geometry structs, return a geometry collection struct."""
+        return self._expr.map_batches(
+            lambda s: s.spatial.to_geometrycollection(),
+            return_dtype=spatial_series_dtype,
+            is_elementwise=True,
+        )
+
+    def from_WKB(self, crs: Any = 4326) -> pl.Expr:  #  NOQA:ANN401, N802
+        """Return a spatial series from a series of WKB.
+
+        Parameters
+        ----------
+        crs
+            The coordinate reference system of the data.
+
+        """
+        return self._expr.map_batches(
+            lambda s: s.spatial.from_WKB(crs=crs),
+            return_dtype=spatial_series_dtype,
+        )
+
+    def from_WKT(self, crs: Any = 4326) -> pl.Expr:  #  NOQA:ANN401, N802
+        """Return a spatial series from a series of WKT.
+
+        Parameters
+        ----------
+        crs
+            The coordinate reference system of the data.
+
+        """
+        return self._expr.map_batches(
+            lambda s: s.spatial.from_WKT(crs=crs),
+            return_dtype=spatial_series_dtype,
+        )
