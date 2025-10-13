@@ -31,6 +31,9 @@ lonboard = [
 examples = [
     "geodatasets>=2024.8.0",
 ]
+knn = [
+    "scipy>=1.13.1",
+]
 
 [build-system]
 requires = ["hatchling"]
