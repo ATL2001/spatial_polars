@@ -75,7 +75,7 @@ def arch_mound_df() -> pl.DataFrame:
 #     return
 
 
-def test_scan_geojson(arch_mound_df:pl.DataFrame) -> None:
+def test_scan_geojson(arch_mound_df: pl.DataFrame) -> None:
     """Test scanning geojson."""
     lf = scan_spatial(test_data_dir / "arch_mound.geojson")
     # reading from geojson will automatically add OGC_FID
@@ -83,7 +83,7 @@ def test_scan_geojson(arch_mound_df:pl.DataFrame) -> None:
     assert_frame_equal(lf.collect(), arch_mound_df, check_dtypes=False)
 
 
-def test_scan_geojsonsseq(arch_mound_df:pl.DataFrame) -> None:
+def test_scan_geojsonsseq(arch_mound_df: pl.DataFrame) -> None:
     """Test scanning geojsonseq."""
     lf = scan_spatial(test_data_dir / "arch_mound.geojsonl")
     # reading from geojsonl will automatically add OGC_FID
@@ -91,7 +91,7 @@ def test_scan_geojsonsseq(arch_mound_df:pl.DataFrame) -> None:
     assert_frame_equal(lf.collect(), arch_mound_df, check_dtypes=False)
 
 
-def test_scan_gpkg(arch_mound_df:pl.DataFrame) -> None:
+def test_scan_gpkg(arch_mound_df: pl.DataFrame) -> None:
     """Test scanning geopackage."""
     lf = scan_spatial(test_data_gpkg, layer="arch_mound")
     # reading from geopackage will automatically read fids
@@ -99,7 +99,7 @@ def test_scan_gpkg(arch_mound_df:pl.DataFrame) -> None:
     assert_frame_equal(lf.collect(), arch_mound_df, check_dtypes=False)
 
 
-def test_scan_geoparquet(arch_mound_df:pl.DataFrame) -> None:
+def test_scan_geoparquet(arch_mound_df: pl.DataFrame) -> None:
     """Test scanning geoparquet."""
     lf = scan_spatial(test_data_dir / "arch_mound2.parquet")
     assert_frame_equal(lf.collect(), arch_mound_df)
@@ -145,7 +145,6 @@ def test_scan_subset_parquet_columns() -> None:
     lf = scan_spatial(test_data_dir / "arch_mound2.parquet").select("geometry", "Place")
     expected_col_count = 2
     assert len(lf.collect_schema()) == expected_col_count
-
 
 
 def test_scan_subset_geojson_columns() -> None:

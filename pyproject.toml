@@ -1,6 +1,6 @@
 [project]
 name = "spatial-polars"
-version = "0.2.0" # dont forget __init__.py and uv lock
+version = "0.2.1" # dont forget __init__.py and uv lock
 description = "A package that extends polars for working with geospatial data."
 readme = "README.md"
 authors = [
@@ -30,6 +30,9 @@ lonboard = [
 ]
 examples = [
     "geodatasets>=2024.8.0",
+]
+knn = [
+    "scipy>=1.13.1",
 ]
 
 [build-system]

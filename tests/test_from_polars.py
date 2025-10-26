@@ -1,9 +1,10 @@
 import polars as pl
 import shapely
-from fixtures import *  # NOQA:F403
 from polars.testing import assert_frame_equal
 
 from spatial_polars import SpatialFrame
+
+from .fixtures import *  # NOQA:F403
 
 
 def test_from_point_coords(arch_mound_df: pl.DataFrame) -> None:
@@ -19,7 +20,7 @@ def test_from_point_coords(arch_mound_df: pl.DataFrame) -> None:
     assert_frame_equal(s_df, arch_mound_df)
 
 
-def test_from_WKB(arch_mound_df: pl.DataFrame) -> None:  #NOQA:N802
+def test_from_WKB(arch_mound_df: pl.DataFrame) -> None:  # NOQA:N802
     """Test from wkt."""
     arch_wkb = shapely.Point(-90.18497, 38.62456).wkb
     monks_mound_wkb = shapely.Point(-90.06211, 38.66072).wkb
@@ -30,10 +31,10 @@ def test_from_WKB(arch_mound_df: pl.DataFrame) -> None:  #NOQA:N802
         },
     )
     s_df = SpatialFrame.from_WKB(df, "wkb")
-    assert_frame_equal(s_df, arch_mound_df)
+    assert_frame_equal(s_df, arch_mound_df.rename({"geometry": "wkb"}))
 
 
-def test_from_WKB_named_geometry(arch_mound_df: pl.DataFrame) -> None:  #NOQA:N802
+def test_from_WKB_named_geometry(arch_mound_df: pl.DataFrame) -> None:  # NOQA:N802
     """Test from wkb where input column is named 'geometry'."""
     arch_wkb = shapely.Point(-90.18497, 38.62456).wkb
     monks_mound_wkb = shapely.Point(-90.06211, 38.66072).wkb
@@ -47,7 +48,7 @@ def test_from_WKB_named_geometry(arch_mound_df: pl.DataFrame) -> None:  #NOQA:N8
     assert_frame_equal(s_df, arch_mound_df)
 
 
-def test_from_WKT(arch_mound_df: pl.DataFrame) -> None:  #NOQA:N802
+def test_from_WKT(arch_mound_df: pl.DataFrame) -> None:  # NOQA:N802
     """Test from wkt."""
     arch_wkt = shapely.Point(-90.18497, 38.62456).wkt
     monks_mound_wkt = shapely.Point(-90.06211, 38.66072).wkt
@@ -58,10 +59,10 @@ def test_from_WKT(arch_mound_df: pl.DataFrame) -> None:  #NOQA:N802
         },
     )
     s_df = SpatialFrame.from_WKT(df, "wkt")
-    assert_frame_equal(s_df, arch_mound_df)
+    assert_frame_equal(s_df, arch_mound_df.rename({"geometry": "wkt"}))
 
 
-def test_from_WKT_named_geometry(arch_mound_df: pl.DataFrame) -> None:  #NOQA:N802
+def test_from_WKT_named_geometry(arch_mound_df: pl.DataFrame) -> None:  # NOQA:N802
     """Test from wkt where input column is named 'geometry'."""
     arch_wkt = shapely.Point(-90.18497, 38.62456).wkt
     monks_mound_wkt = shapely.Point(-90.06211, 38.66072).wkt

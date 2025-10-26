@@ -52,7 +52,7 @@ PYOGRIO_POLARS_DTYPES = {
 }
 
 
-def scan_spatial(  #NOQA:C901,PLR0915
+def scan_spatial(  # NOQA:C901,PLR0915
     path_or_buffer: str | Path | BytesIO,
     layer: str | int | None = None,
     encoding: str | None = None,
