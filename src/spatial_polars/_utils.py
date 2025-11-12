@@ -4,9 +4,21 @@ from typing import Literal
 
 import numpy as np
 import polars as pl
-from matplotlib.colors import Colormap
-from palettable.palette import Palette
 from polars import selectors as cs
+
+try:
+    from matplotlib.colors import Colormap
+
+    HAS_MATPLOTLIB = True
+except ModuleNotFoundError:
+    HAS_MATPLOTLIB = False
+
+try:
+    from palettable.palette import Palette
+
+    HAS_PALETTABLE = True
+except ModuleNotFoundError:
+    HAS_PALETTABLE = False
 
 
 def validate_col_exists_in_df(df: pl.DataFrame, col: str) -> None:
@@ -138,7 +150,9 @@ def validate_cmap_input(
         raise ValueError(msg)
 
     if cmap_type == "continuous":
-        if isinstance(cmap, (Palette, Colormap)) is False:
+        if (HAS_MATPLOTLIB and isinstance(cmap, Colormap) is False) and (
+            HAS_PALETTABLE and isinstance(cmap, Palette) is False
+        ):
             # verify continuous cmaps get a cmap or appropriate type.
             msg = (
                 f"`{cmap_type=}` is `continuous`, but {cmap=}.  Please provide a",
