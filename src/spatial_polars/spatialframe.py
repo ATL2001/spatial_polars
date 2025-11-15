@@ -16,8 +16,6 @@ import pyogrio
 import pyproj
 import shapely
 from geoarrow.pyarrow import io as gaio
-from lonboard import PathLayer, PolygonLayer, ScatterplotLayer, viz
-from lonboard.colormap import apply_categorical_cmap, apply_continuous_cmap
 from polars import col as c
 
 from ._utils import validate_cmap_input, validate_width_and_radius_input
@@ -42,6 +40,33 @@ if TYPE_CHECKING:
 __all__ = [
     "SpatialFrame",
 ]
+
+try:
+    from lonboard import PathLayer, PolygonLayer, ScatterplotLayer, viz
+    from lonboard.colormap import apply_categorical_cmap, apply_continuous_cmap
+
+    HAS_LONBOARD = True
+except ModuleNotFoundError:
+    HAS_LONBOARD = False
+
+try:
+    from scipy.spatial import KDTree
+
+    HAS_SCIPY = True
+except ModuleNotFoundError:
+    HAS_SCIPY = False
+
+
+def check_lonboard() -> None:
+    if HAS_LONBOARD is False:
+        err = "Lonboard not installed, to use this function, please install lonboard."
+        raise ModuleNotFoundError(err)
+
+
+def check_scipy() -> None:
+    if HAS_SCIPY is False:
+        err = "Scipy not installed, to use this function, please install scipy."
+        raise ModuleNotFoundError(err)
 
 
 @pl.api.register_dataframe_namespace("spatial")
@@ -691,8 +716,6 @@ class SpatialFrame:
             This method relies on scipy.spatial's KDTree to find the neighbors.
 
         """
-        from scipy.spatial import KDTree  # NOQA:PLC0415
-
         if left_on is None:
             left_on = on
         if right_on is None:
@@ -771,6 +794,7 @@ class SpatialFrame:
         >>> df.spatial.viz()
 
         """  # NOQA:E501
+        check_lonboard()
         geoarrow_table = self.to_geoarrow(geometry_name)
 
         return viz(
@@ -790,6 +814,7 @@ class SpatialFrame:
         *,
         normalize_cmap_col: bool,
     ) -> NDArray | None:
+        check_lonboard()
         color = None
         if cmap_col is not None:
             if cmap_type == "continuous":
@@ -976,6 +1001,7 @@ class SpatialFrame:
         Implementation varies slightly from Lonboard for the setting of color and width to make it easy to use from the SpatialFrame.
 
         """  # NOQA:E501
+        check_lonboard()
         validate_cmap_input(
             self._df,
             fill_cmap_col,
@@ -1145,6 +1171,7 @@ class SpatialFrame:
         Implementation varies slightly from Lonboard for the setting of color and width to make it easy to use from the SpatialFrame.
 
         """  # NOQA:E501
+        check_lonboard()
         validate_cmap_input(
             self._df,
             cmap_col,
@@ -1329,6 +1356,7 @@ class SpatialFrame:
         Implementation varies slightly from Lonboard for the setting of color and width to make it easy to use from the SpatialFrame.
 
         """  # NOQA:E501
+        check_lonboard()
         validate_cmap_input(
             self._df,
             fill_cmap_col,
