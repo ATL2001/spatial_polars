@@ -21,10 +21,6 @@ Spatial polars expressions which produce a boolean series can be used in polars 
 8. Make a polygonlayer from our filtered dataframe
 9. Add our filtered polygonlayer to our map
 
-```python exec="on" result="text"
---8<-- "spatial_filter.py"
-```
-
 <div class="map">
   <iframe src="../spatial_filter.html" width="800" height="504"></iframe>
 </div>
