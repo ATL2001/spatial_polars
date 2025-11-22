@@ -21,6 +21,10 @@
          <lastmod>2025-11-22</lastmod>
     </url>
     <url>
+         <loc>https://github.com/ATL2001/spatial-polars/blog/2025/11/21/hey-look-a-spatial-polars-blog-or-why-i-made-this/</loc>
+         <lastmod>2025-11-22</lastmod>
+    </url>
+    <url>
          <loc>https://github.com/ATL2001/spatial-polars/examples/reading_data/</loc>
          <lastmod>2025-11-22</lastmod>
     </url>
@@ -74,6 +78,26 @@
     </url>
     <url>
          <loc>https://github.com/ATL2001/spatial-polars/examples/visualization/viz/</loc>
+         <lastmod>2025-11-22</lastmod>
+    </url>
+    <url>
+         <loc>https://github.com/ATL2001/spatial-polars/blog/archive/2025/</loc>
+         <lastmod>2025-11-22</lastmod>
+    </url>
+    <url>
+         <loc>https://github.com/ATL2001/spatial-polars/blog/category/pyogrio/</loc>
+         <lastmod>2025-11-22</lastmod>
+    </url>
+    <url>
+         <loc>https://github.com/ATL2001/spatial-polars/blog/category/shapely/</loc>
+         <lastmod>2025-11-22</lastmod>
+    </url>
+    <url>
+         <loc>https://github.com/ATL2001/spatial-polars/blog/category/lonboard/</loc>
+         <lastmod>2025-11-22</lastmod>
+    </url>
+    <url>
+         <loc>https://github.com/ATL2001/spatial-polars/blog/category/spatial-bench/</loc>
          <lastmod>2025-11-22</lastmod>
     </url>
 </urlset>
