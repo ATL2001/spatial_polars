@@ -25,7 +25,10 @@ repo_url: https://github.com/ATL2001/spatial_polars
 
 plugins:
   - search
-  - autorefs
+  - autorefs:
+      resolve_closest: true
+  - blog:
+      categories: true
   - mkdocstrings:
       handlers:
         python:
@@ -42,7 +45,6 @@ plugins:
             show_docstring_examples: true
             members_order: source
   - markdown-exec
-  - blog
 
 
 markdown_extensions:
