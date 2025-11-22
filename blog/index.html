@@ -8,28 +8,26 @@
       
       
       
-        <link rel="canonical" href="https://github.com/ATL2001/spatial-polars/examples/expressions/geometry_column_and_scalar_geometry_input_expressions/">
+        <link rel="canonical" href="https://github.com/ATL2001/spatial-polars/blog/">
       
       
-        <link rel="prev" href="../single_geometry_column_input_expressions/">
+        <link rel="prev" href="../SpatialExpr/">
       
       
-        <link rel="next" href="../two_geometry_column_input_expressions/">
       
-      
-      <link rel="icon" href="../../../assets/images/favicon.png">
+      <link rel="icon" href="../assets/images/favicon.png">
       <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.6.21">
     
     
       
-        <title>Geometry column and scalar geometry input expressions - Spatial Polars</title>
+        <title>Spatial Polars Blog - Spatial Polars</title>
       
     
     
-      <link rel="stylesheet" href="../../../assets/stylesheets/main.2a3383ac.min.css">
+      <link rel="stylesheet" href="../assets/stylesheets/main.2a3383ac.min.css">
       
         
-        <link rel="stylesheet" href="../../../assets/stylesheets/palette.06af60db.min.css">
+        <link rel="stylesheet" href="../assets/stylesheets/palette.06af60db.min.css">
       
       
 
@@ -48,13 +46,13 @@
       
     
     
-      <link rel="stylesheet" href="../../../assets/_markdown_exec_pyodide.css">
+      <link rel="stylesheet" href="../assets/_markdown_exec_pyodide.css">
     
-      <link rel="stylesheet" href="../../../assets/_markdown_exec_ansi.css">
+      <link rel="stylesheet" href="../assets/_markdown_exec_ansi.css">
     
-      <link rel="stylesheet" href="../../../assets/_mkdocstrings.css">
+      <link rel="stylesheet" href="../assets/_mkdocstrings.css">
     
-    <script>__md_scope=new URL("../../..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    <script>__md_scope=new URL("..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
     
       
 
@@ -80,7 +78,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#expressions-involving-a-geometry-column-and-a-scalar-geometry" class="md-skip">
+        <a href="#spatial-polars-blog" class="md-skip">
           Skip to content
         </a>
       
@@ -96,7 +94,7 @@
 
 <header class="md-header md-header--shadow" data-md-component="header">
   <nav class="md-header__inner md-grid" aria-label="Header">
-    <a href="../../.." title="Spatial Polars" class="md-header__button md-logo" aria-label="Spatial Polars" data-md-component="logo">
+    <a href=".." title="Spatial Polars" class="md-header__button md-logo" aria-label="Spatial Polars" data-md-component="logo">
       
   
   <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 7.0.1 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M351.9 280H161c2.9 64.5 17.2 123.9 37.5 167.4 11.4 24.5 23.7 41.8 35.1 52.4 11.2 10.5 18.9 12.2 22.9 12.2s11.7-1.7 22.9-12.2c11.4-10.6 23.7-28 35.1-52.4 20.3-43.5 34.6-102.9 37.5-167.4zm-191-48h190.9c-2.8-64.5-17.1-123.9-37.4-167.4-11.4-24.4-23.7-41.8-35.1-52.4C268.1 1.7 260.4 0 256.4 0s-11.7 1.7-22.9 12.2c-11.4 10.6-23.7 28-35.1 52.4-20.3 43.5-34.6 102.9-37.5 167.4m-48 0c3.5-85.6 25.6-165.1 57.9-217.3C78.7 47.3 10.9 131.2 1.5 232zM1.5 280c9.4 100.8 77.2 184.7 169.3 217.3-32.3-52.2-54.4-131.7-57.9-217.3zm398.4 0c-3.5 85.6-25.6 165.1-57.9 217.3 92.1-32.7 159.9-116.5 169.3-217.3zm111.4-48C501.9 131.2 434.1 47.3 342 14.7c32.3 52.2 54.4 131.7 57.9 217.3z"/></svg>
@@ -116,7 +114,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              Geometry column and scalar geometry input expressions
+              Spatial Polars Blog
             
           </span>
         </div>
@@ -232,7 +230,7 @@
 
 <nav class="md-nav md-nav--primary" aria-label="Navigation" data-md-level="0">
   <label class="md-nav__title" for="__drawer">
-    <a href="../../.." title="Spatial Polars" class="md-nav__button md-logo" aria-label="Spatial Polars" data-md-component="logo">
+    <a href=".." title="Spatial Polars" class="md-nav__button md-logo" aria-label="Spatial Polars" data-md-component="logo">
       
   
   <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 7.0.1 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M351.9 280H161c2.9 64.5 17.2 123.9 37.5 167.4 11.4 24.5 23.7 41.8 35.1 52.4 11.2 10.5 18.9 12.2 22.9 12.2s11.7-1.7 22.9-12.2c11.4-10.6 23.7-28 35.1-52.4 20.3-43.5 34.6-102.9 37.5-167.4zm-191-48h190.9c-2.8-64.5-17.1-123.9-37.4-167.4-11.4-24.4-23.7-41.8-35.1-52.4C268.1 1.7 260.4 0 256.4 0s-11.7 1.7-22.9 12.2c-11.4 10.6-23.7 28-35.1 52.4-20.3 43.5-34.6 102.9-37.5 167.4m-48 0c3.5-85.6 25.6-165.1 57.9-217.3C78.7 47.3 10.9 131.2 1.5 232zM1.5 280c9.4 100.8 77.2 184.7 169.3 217.3-32.3-52.2-54.4-131.7-57.9-217.3zm398.4 0c-3.5 85.6-25.6 165.1-57.9 217.3 92.1-32.7 159.9-116.5 169.3-217.3zm111.4-48C501.9 131.2 434.1 47.3 342 14.7c32.3 52.2 54.4 131.7 57.9 217.3z"/></svg>
@@ -262,7 +260,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../.." class="md-nav__link">
+      <a href=".." class="md-nav__link">
         
   
   
@@ -281,20 +279,18 @@
       
   
   
-    
   
   
-  
     
     
     
     
     
-    <li class="md-nav__item md-nav__item--active md-nav__item--nested">
+    <li class="md-nav__item md-nav__item--nested">
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2" checked>
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2" >
         
           
           <label class="md-nav__link" for="__nav_2" id="__nav_2_label" tabindex="0">
@@ -310,7 +306,7 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_2_label" aria-expanded="true">
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_2_label" aria-expanded="false">
           <label class="md-nav__title" for="__nav_2">
             <span class="md-nav__icon md-icon"></span>
             Examples
@@ -324,7 +320,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../reading_data/" class="md-nav__link">
+      <a href="../examples/reading_data/" class="md-nav__link">
         
   
   
@@ -347,7 +343,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../starting_from_a_polars_df/" class="md-nav__link">
+      <a href="../examples/starting_from_a_polars_df/" class="md-nav__link">
         
   
   
@@ -370,7 +366,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../writing_data/" class="md-nav__link">
+      <a href="../examples/writing_data/" class="md-nav__link">
         
   
   
@@ -393,7 +389,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../spatial_join/" class="md-nav__link">
+      <a href="../examples/spatial_join/" class="md-nav__link">
         
   
   
@@ -416,7 +412,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../reprojection/" class="md-nav__link">
+      <a href="../examples/reprojection/" class="md-nav__link">
         
   
   
@@ -436,20 +432,18 @@
                 
   
   
-    
   
   
-  
     
     
     
     
     
-    <li class="md-nav__item md-nav__item--active md-nav__item--nested">
+    <li class="md-nav__item md-nav__item--nested">
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2_6" checked>
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2_6" >
         
           
           <label class="md-nav__link" for="__nav_2_6" id="__nav_2_6_label" tabindex="0">
@@ -465,7 +459,7 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_2_6_label" aria-expanded="true">
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_2_6_label" aria-expanded="false">
           <label class="md-nav__title" for="__nav_2_6">
             <span class="md-nav__icon md-icon"></span>
             Expressions
@@ -479,7 +473,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../single_geometry_column_input_expressions/" class="md-nav__link">
+      <a href="../examples/expressions/single_geometry_column_input_expressions/" class="md-nav__link">
         
   
   
@@ -499,30 +493,10 @@
                 
   
   
-    
   
   
-  
-    <li class="md-nav__item md-nav__item--active">
-      
-      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
-      
-      
-      
-        <label class="md-nav__link md-nav__link--active" for="__toc">
-          
-  
-  
-  <span class="md-ellipsis">
-    Geometry column and scalar geometry input expressions
-    
-  </span>
-  
-
-          <span class="md-nav__icon md-icon"></span>
-        </label>
-      
-      <a href="./" class="md-nav__link md-nav__link--active">
+    <li class="md-nav__item">
+      <a href="../examples/expressions/geometry_column_and_scalar_geometry_input_expressions/" class="md-nav__link">
         
   
   
@@ -533,33 +507,6 @@
   
 
       </a>
-      
-        
-
-<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
-  
-  
-  
-  
-    <label class="md-nav__title" for="__toc">
-      <span class="md-nav__icon md-icon"></span>
-      Table of contents
-    </label>
-    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
-      
-        <li class="md-nav__item">
-  <a href="#expressions-involving-a-geometry-column-and-a-scalar-geometry" class="md-nav__link">
-    <span class="md-ellipsis">
-      Expressions involving a geometry column and a scalar geometry
-    </span>
-  </a>
-  
-</li>
-      
-    </ul>
-  
-</nav>
-      
     </li>
   
 
@@ -572,7 +519,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../two_geometry_column_input_expressions/" class="md-nav__link">
+      <a href="../examples/expressions/two_geometry_column_input_expressions/" class="md-nav__link">
         
   
   
@@ -595,7 +542,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../group_by_context_expressions/" class="md-nav__link">
+      <a href="../examples/expressions/group_by_context_expressions/" class="md-nav__link">
         
   
   
@@ -618,7 +565,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../spatial_filter/" class="md-nav__link">
+      <a href="../examples/expressions/spatial_filter/" class="md-nav__link">
         
   
   
@@ -687,7 +634,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../visualization/viz/" class="md-nav__link">
+      <a href="../examples/visualization/viz/" class="md-nav__link">
         
   
   
@@ -710,7 +657,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../visualization/scatterplotlayer/" class="md-nav__link">
+      <a href="../examples/visualization/scatterplotlayer/" class="md-nav__link">
         
   
   
@@ -733,7 +680,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../visualization/pathlayer/" class="md-nav__link">
+      <a href="../examples/visualization/pathlayer/" class="md-nav__link">
         
   
   
@@ -756,7 +703,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../visualization/polygonlayer/" class="md-nav__link">
+      <a href="../examples/visualization/polygonlayer/" class="md-nav__link">
         
   
   
@@ -832,7 +779,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../io/" class="md-nav__link">
+      <a href="../io/" class="md-nav__link">
         
   
   
@@ -855,7 +802,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../SpatialFrame/" class="md-nav__link">
+      <a href="../SpatialFrame/" class="md-nav__link">
         
   
   
@@ -878,7 +825,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../SpatialExpr/" class="md-nav__link">
+      <a href="../SpatialExpr/" class="md-nav__link">
         
   
   
@@ -905,18 +852,20 @@
       
   
   
+    
   
   
+  
     
     
     
     
     
-    <li class="md-nav__item md-nav__item--nested">
+    <li class="md-nav__item md-nav__item--active md-nav__item--nested">
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4" >
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4" checked>
         
           
           <label class="md-nav__link" for="__nav_4" id="__nav_4_label" tabindex="0">
@@ -932,7 +881,7 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="false">
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="true">
           <label class="md-nav__title" for="__nav_4">
             <span class="md-nav__icon md-icon"></span>
             Blog
@@ -943,12 +892,23 @@
                 
   
   
-  
     
   
   
-    <li class="md-nav__item">
-      <a href="../../../blog/" class="md-nav__link">
+    
+      
+    
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
         
   
   
@@ -959,6 +919,7 @@
   
 
       </a>
+      
     </li>
   
 
@@ -971,7 +932,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../.." class="md-nav__link">
+      <a href=".." class="md-nav__link">
         
   
   
@@ -1011,23 +972,8 @@
   
   
   
+    
   
-    <label class="md-nav__title" for="__toc">
-      <span class="md-nav__icon md-icon"></span>
-      Table of contents
-    </label>
-    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
-      
-        <li class="md-nav__item">
-  <a href="#expressions-involving-a-geometry-column-and-a-scalar-geometry" class="md-nav__link">
-    <span class="md-ellipsis">
-      Expressions involving a geometry column and a scalar geometry
-    </span>
-  </a>
-  
-</li>
-      
-    </ul>
   
 </nav>
                   </div>
@@ -1036,88 +982,19 @@
             
           
           
-            <div class="md-content" data-md-component="content">
-              <article class="md-content__inner md-typeset">
-                
-                  
+  <div class="md-content" data-md-component="content">
+    <div class="md-content__inner">
+      <header class="md-typeset">
+        <h1 id="spatial-polars-blog">Spatial Polars Blog</h1>
+<p>A blog about the usage of spatial polars/ polars / spatial stuff / other musings.</p>
+<!-- more -->
+<p>...</p>
+      </header>
+      
+      
+    </div>
+  </div>
 
-
-  
-  
-
-
-  <h1>Geometry column and scalar geometry input expressions</h1>
-
-<h2 id="expressions-involving-a-geometry-column-and-a-scalar-geometry">Expressions involving a geometry column and a scalar geometry</h2>
-<p>Spatial polars has many expressions which can be called from a geometry column but need another geometry to perform the operation.</p>
-<p>If the desired output is to compute the operation on all the geometries in the series along with another single geometry, we can call the expression from the geometry column in our dataframe and provide the scalar geometry to the expression</p>
-<div class="admonition note">
-<p class="admonition-title">Note</p>
-<p>This example makes use the <a href="https://geodatasets.readthedocs.io/en/latest/introduction.html">geodatasets</a> python package to access some spatial data easily.</p>
-<p>Calling <code>geodatasets.get_path()</code> will download data the specified data to the machine and return the path to the downloaded file.  If the file has already been downloaded it will simply return the path to the file. 
-<a href="https://geodatasets.readthedocs.io/en/latest/introduction.html#downloading-and-caching">See downloading and caching</a> for further details.</p>
-</div>
-<p>In the example below we'll use the distance expression to compute the distance of the counties in thelower 48 states of the USA to the gateway Arch in St. Louis Mo.  Then to give some context to the numbers, we'll display the data on a Lonboard map symbolized by the distance we calculated.</p>
-<div class="language-py highlight"><span class="filename">Compute Distance To Scalar Geometry</span><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="kn">import</span><span class="w"> </span><span class="nn">geodatasets</span>
-</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="kn">import</span><span class="w"> </span><span class="nn">polars</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">pl</span>
-</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="kn">import</span><span class="w"> </span><span class="nn">shapely</span>
-</span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a><span class="kn">from</span><span class="w"> </span><span class="nn">lonboard</span><span class="w"> </span><span class="kn">import</span> <span class="n">Map</span>
-</span><span id="__span-0-5"><a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a><span class="kn">from</span><span class="w"> </span><span class="nn">palettable.colorbrewer.diverging</span><span class="w"> </span><span class="kn">import</span> <span class="n">RdYlGn_11</span>
-</span><span id="__span-0-6"><a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a>
-</span><span id="__span-0-7"><a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a><span class="kn">from</span><span class="w"> </span><span class="nn">spatial_polars</span><span class="w"> </span><span class="kn">import</span> <span class="n">scan_spatial</span>
-</span><span id="__span-0-8"><a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a>
-</span><span id="__span-0-9"><a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a><span class="n">arch_pt</span> <span class="o">=</span> <span class="n">shapely</span><span class="o">.</span><span class="n">Point</span><span class="p">(</span><span class="o">-</span><span class="mf">90.18497</span><span class="p">,</span> <span class="mf">38.62456</span><span class="p">)</span>  <span class="c1"># (1)!</span>
-</span><span id="__span-0-10"><a id="__codelineno-0-10" name="__codelineno-0-10" href="#__codelineno-0-10"></a>
-</span><span id="__span-0-11"><a id="__codelineno-0-11" name="__codelineno-0-11" href="#__codelineno-0-11"></a><span class="n">df</span> <span class="o">=</span> <span class="p">(</span>
-</span><span id="__span-0-12"><a id="__codelineno-0-12" name="__codelineno-0-12" href="#__codelineno-0-12"></a>    <span class="n">scan_spatial</span><span class="p">(</span><span class="n">geodatasets</span><span class="o">.</span><span class="n">get_path</span><span class="p">(</span><span class="s2">&quot;geoda.health&quot;</span><span class="p">))</span>  <span class="c1"># (2)!</span>
-</span><span id="__span-0-13"><a id="__codelineno-0-13" name="__codelineno-0-13" href="#__codelineno-0-13"></a>    <span class="o">.</span><span class="n">select</span><span class="p">(</span>
-</span><span id="__span-0-14"><a id="__codelineno-0-14" name="__codelineno-0-14" href="#__codelineno-0-14"></a>        <span class="s2">&quot;countyname&quot;</span><span class="p">,</span>  <span class="c1"># (3)!</span>
-</span><span id="__span-0-15"><a id="__codelineno-0-15" name="__codelineno-0-15" href="#__codelineno-0-15"></a>        <span class="s2">&quot;geometry&quot;</span><span class="p">,</span>  <span class="c1"># (4)!</span>
-</span><span id="__span-0-16"><a id="__codelineno-0-16" name="__codelineno-0-16" href="#__codelineno-0-16"></a><span class="hll">        <span class="n">pl</span><span class="o">.</span><span class="n">col</span><span class="p">(</span><span class="s2">&quot;geometry&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">spatial</span><span class="o">.</span><span class="n">distance</span><span class="p">(</span><span class="n">arch_pt</span><span class="p">)</span><span class="o">.</span><span class="n">alias</span><span class="p">(</span><span class="s2">&quot;dist_to_arch&quot;</span><span class="p">),</span>  <span class="c1"># (5)!</span>
-</span></span><span id="__span-0-17"><a id="__codelineno-0-17" name="__codelineno-0-17" href="#__codelineno-0-17"></a>    <span class="p">)</span>
-</span><span id="__span-0-18"><a id="__codelineno-0-18" name="__codelineno-0-18" href="#__codelineno-0-18"></a>    <span class="o">.</span><span class="n">collect</span><span class="p">(</span><span class="n">engine</span><span class="o">=</span><span class="s2">&quot;streaming&quot;</span><span class="p">)</span>  <span class="c1"># (6)!</span>
-</span><span id="__span-0-19"><a id="__codelineno-0-19" name="__codelineno-0-19" href="#__codelineno-0-19"></a><span class="p">)</span>
-</span><span id="__span-0-20"><a id="__codelineno-0-20" name="__codelineno-0-20" href="#__codelineno-0-20"></a>
-</span><span id="__span-0-21"><a id="__codelineno-0-21" name="__codelineno-0-21" href="#__codelineno-0-21"></a><span class="n">polygon_layer</span> <span class="o">=</span> <span class="n">df</span><span class="o">.</span><span class="n">spatial</span><span class="o">.</span><span class="n">to_polygonlayer</span><span class="p">(</span>  <span class="c1"># (7)!</span>
-</span><span id="__span-0-22"><a id="__codelineno-0-22" name="__codelineno-0-22" href="#__codelineno-0-22"></a>    <span class="n">fill_cmap_col</span><span class="o">=</span><span class="s2">&quot;dist_to_arch&quot;</span><span class="p">,</span>
-</span><span id="__span-0-23"><a id="__codelineno-0-23" name="__codelineno-0-23" href="#__codelineno-0-23"></a>    <span class="n">fill_cmap_type</span><span class="o">=</span><span class="s2">&quot;continuous&quot;</span><span class="p">,</span>
-</span><span id="__span-0-24"><a id="__codelineno-0-24" name="__codelineno-0-24" href="#__codelineno-0-24"></a>    <span class="n">fill_cmap</span><span class="o">=</span><span class="n">RdYlGn_11</span><span class="p">,</span>
-</span><span id="__span-0-25"><a id="__codelineno-0-25" name="__codelineno-0-25" href="#__codelineno-0-25"></a>    <span class="n">fill_normalize_cmap_col</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
-</span><span id="__span-0-26"><a id="__codelineno-0-26" name="__codelineno-0-26" href="#__codelineno-0-26"></a>    <span class="n">line_width_min_pixels</span><span class="o">=</span><span class="mf">0.5</span><span class="p">,</span>
-</span><span id="__span-0-27"><a id="__codelineno-0-27" name="__codelineno-0-27" href="#__codelineno-0-27"></a><span class="p">)</span>
-</span><span id="__span-0-28"><a id="__codelineno-0-28" name="__codelineno-0-28" href="#__codelineno-0-28"></a>
-</span><span id="__span-0-29"><a id="__codelineno-0-29" name="__codelineno-0-29" href="#__codelineno-0-29"></a><span class="n">arch_map</span> <span class="o">=</span> <span class="n">Map</span><span class="p">(</span><span class="n">layers</span><span class="o">=</span><span class="p">[</span><span class="n">polygon_layer</span><span class="p">])</span>  <span class="c1"># (8)!</span>
-</span><span id="__span-0-30"><a id="__codelineno-0-30" name="__codelineno-0-30" href="#__codelineno-0-30"></a><span class="n">arch_map</span>
-</span></code></pre></div>
-<ol>
-<li>The point we want to compute the distance to for each of the polygons in our dataframe</li>
-<li>Scan some polygon data</li>
-<li>Select the county name</li>
-<li>Select the geometry column (so we can show the data on a map)</li>
-<li>Compute the distance of each polygon in the dataframe to our point</li>
-<li>Collect the query to create a dataframe</li>
-<li>Create a lonboard polygon layer that's symbolized by the distance we computed, making the smaller numbers(closer to the arch) red, and larger ones (further from the arch) green</li>
-<li>Add the layer to a map and show the results</li>
-</ol>
-<div class="map">
-  <iframe src="../distance_to_arch.html" width="800" height="504"></iframe>
-</div>
-
-
-
-
-
-
-
-
-
-
-
-
-                
-              </article>
-            </div>
-          
           
 <script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
         </div>
@@ -1150,12 +1027,12 @@
     
     
       
-      <script id="__config" type="application/json">{"base": "../../..", "features": ["content.code.annotate", "content.code.copy", "content.code.select"], "search": "../../../assets/javascripts/workers/search.973d3a69.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+      <script id="__config" type="application/json">{"base": "..", "features": ["content.code.annotate", "content.code.copy", "content.code.select"], "search": "../assets/javascripts/workers/search.973d3a69.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
     
     
-      <script src="../../../assets/javascripts/bundle.f55a23d4.min.js"></script>
+      <script src="../assets/javascripts/bundle.f55a23d4.min.js"></script>
       
-        <script src="../../../assets/_markdown_exec_pyodide.js"></script>
+        <script src="../assets/_markdown_exec_pyodide.js"></script>
       
     
   </body>
