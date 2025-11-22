@@ -15,11 +15,14 @@ pip install spatial-polars
 ```title="Install with dependencies for displaying data on a lonboard map"
 pip install spatial-polars[lonboard]
 ```
+```title="Install with dependencies to run KNN joins (installs scipy)"
+pip install spatial-polars[knn]
+```
 ```title="Install with dependencies to run examples in this guide (installs geodatasets)"
 pip install spatial-polars[examples]
 ```
 ```title="Install with all optional dependencies"
-pip install spatial-polars[lonboard, examples]
+pip install spatial-polars[lonboard, examples, knn]
 ```
 
 ## Lazily access geospatial data
