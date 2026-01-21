@@ -2163,7 +2163,7 @@ class LinestringOperations:
         if other is not None:
             return self._expr.map_batches(
                 lambda s: s.spatial.line_locate_point(other, normalized=normalized),
-                return_dtype=spatial_series_dtype,
+                return_dtype=pl.Float64,
                 is_elementwise=True,
             )
         # expect struct with two geometries.
@@ -2172,7 +2172,7 @@ class LinestringOperations:
                 combined.struct[1].spatial.to_shapely_array(),
                 normalized=normalized,
             ),
-            return_dtype=spatial_series_dtype,
+            return_dtype=pl.Float64,
             is_elementwise=True,
         )
 
