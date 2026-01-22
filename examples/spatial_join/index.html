@@ -1198,40 +1198,44 @@
 <p>Made with Natural Earth. Free vector and raster map data @ naturalearthdata.com.</p>
 </div>
 <p>To demonstrate how we can join data together from two dataframes spatially using spatial polars, we'll join some lake polygons with some administrative boundaries to see which lakes are in which countries.</p>
-<p>```py title="Spatial Join" hl_lines="21-26" html="false"
-import polars as pl</p>
-<p>from spatial_polars import scan_spatial</p>
-<p>lake_df = (
-    scan_spatial("https://naciscdn.org/naturalearth/110m/physical/ne_110m_lakes.zip")
-    .select("name", "geometry")
-    .collect(engine="streaming")
-)  # (1)!
-print(f"There are {len(lake_df)} rows in lake_df")</p>
-<p>boundary_df = (
-    scan_spatial(
-        "https://naciscdn.org/naturalearth/110m/cultural/ne_110m_admin_0_countries.zip"
-    )
-    .select("SOVEREIGNT", "geometry")
-    .collect(engine="streaming")
-)  # (2)!</p>
-<p>lake_boundary_df = (
-    lake_df.spatial.join(  # (3)!
-        other=boundary_df,  # (4)!
-        how="inner",  # (5)!
-        predicate="intersects",  # (6)!
-        on="geometry",  # (7)!
-        suffix="_boundary",  # (8)!
-    )
-    .select(
-        pl.col("name"),  # (9)!
-        pl.col("SOVEREIGNT"),
-        pl.col("geometry"),
-        pl.col("geometry_boundary"),
-    )
-    .sort("name")  # (10)!
-)
-print(lake_boundary_df)</p>
-<p>```</p>
+<div class="language-python highlight"><span class="filename">Spatial Join</span><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="kn">import</span><span class="w"> </span><span class="nn">polars</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">pl</span>
+</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>
+</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="kn">from</span><span class="w"> </span><span class="nn">spatial_polars</span><span class="w"> </span><span class="kn">import</span> <span class="n">scan_spatial</span>
+</span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>
+</span><span id="__span-0-5"><a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a><span class="n">lake_lf</span> <span class="o">=</span> <span class="p">(</span>
+</span><span id="__span-0-6"><a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a>    <span class="n">scan_spatial</span><span class="p">(</span><span class="s2">&quot;https://naciscdn.org/naturalearth/110m/physical/ne_110m_lakes.zip&quot;</span><span class="p">)</span>
+</span><span id="__span-0-7"><a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a>    <span class="o">.</span><span class="n">select</span><span class="p">(</span><span class="s2">&quot;name&quot;</span><span class="p">,</span> <span class="s2">&quot;geometry&quot;</span><span class="p">)</span>
+</span><span id="__span-0-8"><a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a><span class="p">)</span>  <span class="c1"># (1)!</span>
+</span><span id="__span-0-9"><a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a>
+</span><span id="__span-0-10"><a id="__codelineno-0-10" name="__codelineno-0-10" href="#__codelineno-0-10"></a><span class="n">boundary_lf</span> <span class="o">=</span> <span class="p">(</span>
+</span><span id="__span-0-11"><a id="__codelineno-0-11" name="__codelineno-0-11" href="#__codelineno-0-11"></a>    <span class="n">scan_spatial</span><span class="p">(</span>
+</span><span id="__span-0-12"><a id="__codelineno-0-12" name="__codelineno-0-12" href="#__codelineno-0-12"></a>        <span class="s2">&quot;https://naciscdn.org/naturalearth/110m/cultural/ne_110m_admin_0_countries.zip&quot;</span><span class="p">,</span>
+</span><span id="__span-0-13"><a id="__codelineno-0-13" name="__codelineno-0-13" href="#__codelineno-0-13"></a>    <span class="p">)</span>
+</span><span id="__span-0-14"><a id="__codelineno-0-14" name="__codelineno-0-14" href="#__codelineno-0-14"></a>    <span class="o">.</span><span class="n">select</span><span class="p">(</span><span class="s2">&quot;SOVEREIGNT&quot;</span><span class="p">,</span> <span class="s2">&quot;geometry&quot;</span><span class="p">)</span>
+</span><span id="__span-0-15"><a id="__codelineno-0-15" name="__codelineno-0-15" href="#__codelineno-0-15"></a><span class="p">)</span>  <span class="c1"># (2)!</span>
+</span><span id="__span-0-16"><a id="__codelineno-0-16" name="__codelineno-0-16" href="#__codelineno-0-16"></a>
+</span><span id="__span-0-17"><a id="__codelineno-0-17" name="__codelineno-0-17" href="#__codelineno-0-17"></a><span class="n">lake_df</span><span class="p">,</span> <span class="n">boundary_df</span> <span class="o">=</span> <span class="n">pl</span><span class="o">.</span><span class="n">collect_all</span><span class="p">([</span><span class="n">lake_lf</span><span class="p">,</span> <span class="n">boundary_lf</span><span class="p">])</span>
+</span><span id="__span-0-18"><a id="__codelineno-0-18" name="__codelineno-0-18" href="#__codelineno-0-18"></a><span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;There are </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">lake_df</span><span class="p">)</span><span class="si">}</span><span class="s2"> rows in lake_df&quot;</span><span class="p">)</span>
+</span><span id="__span-0-19"><a id="__codelineno-0-19" name="__codelineno-0-19" href="#__codelineno-0-19"></a><span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;There are </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">boundary_df</span><span class="p">)</span><span class="si">}</span><span class="s2"> rows in boundary_df&quot;</span><span class="p">)</span>
+</span><span id="__span-0-20"><a id="__codelineno-0-20" name="__codelineno-0-20" href="#__codelineno-0-20"></a>
+</span><span id="__span-0-21"><a id="__codelineno-0-21" name="__codelineno-0-21" href="#__codelineno-0-21"></a><span class="hll"><span class="n">lake_boundary_df</span> <span class="o">=</span> <span class="p">(</span>
+</span></span><span id="__span-0-22"><a id="__codelineno-0-22" name="__codelineno-0-22" href="#__codelineno-0-22"></a><span class="hll">    <span class="n">lake_df</span><span class="o">.</span><span class="n">spatial</span><span class="o">.</span><span class="n">join</span><span class="p">(</span>  <span class="c1"># (3)!</span>
+</span></span><span id="__span-0-23"><a id="__codelineno-0-23" name="__codelineno-0-23" href="#__codelineno-0-23"></a><span class="hll">        <span class="n">other</span><span class="o">=</span><span class="n">boundary_df</span><span class="p">,</span>  <span class="c1"># (4)!</span>
+</span></span><span id="__span-0-24"><a id="__codelineno-0-24" name="__codelineno-0-24" href="#__codelineno-0-24"></a><span class="hll">        <span class="n">how</span><span class="o">=</span><span class="s2">&quot;inner&quot;</span><span class="p">,</span>  <span class="c1"># (5)!</span>
+</span></span><span id="__span-0-25"><a id="__codelineno-0-25" name="__codelineno-0-25" href="#__codelineno-0-25"></a><span class="hll">        <span class="n">predicate</span><span class="o">=</span><span class="s2">&quot;intersects&quot;</span><span class="p">,</span>  <span class="c1"># (6)!</span>
+</span></span><span id="__span-0-26"><a id="__codelineno-0-26" name="__codelineno-0-26" href="#__codelineno-0-26"></a><span class="hll">        <span class="n">on</span><span class="o">=</span><span class="s2">&quot;geometry&quot;</span><span class="p">,</span>  <span class="c1"># (7)!</span>
+</span></span><span id="__span-0-27"><a id="__codelineno-0-27" name="__codelineno-0-27" href="#__codelineno-0-27"></a>        <span class="n">suffix</span><span class="o">=</span><span class="s2">&quot;_boundary&quot;</span><span class="p">,</span>  <span class="c1"># (8)!</span>
+</span><span id="__span-0-28"><a id="__codelineno-0-28" name="__codelineno-0-28" href="#__codelineno-0-28"></a>    <span class="p">)</span>
+</span><span id="__span-0-29"><a id="__codelineno-0-29" name="__codelineno-0-29" href="#__codelineno-0-29"></a>    <span class="o">.</span><span class="n">select</span><span class="p">(</span>
+</span><span id="__span-0-30"><a id="__codelineno-0-30" name="__codelineno-0-30" href="#__codelineno-0-30"></a>        <span class="n">pl</span><span class="o">.</span><span class="n">col</span><span class="p">(</span><span class="s2">&quot;name&quot;</span><span class="p">),</span>  <span class="c1"># (9)!</span>
+</span><span id="__span-0-31"><a id="__codelineno-0-31" name="__codelineno-0-31" href="#__codelineno-0-31"></a>        <span class="n">pl</span><span class="o">.</span><span class="n">col</span><span class="p">(</span><span class="s2">&quot;SOVEREIGNT&quot;</span><span class="p">),</span>
+</span><span id="__span-0-32"><a id="__codelineno-0-32" name="__codelineno-0-32" href="#__codelineno-0-32"></a>        <span class="n">pl</span><span class="o">.</span><span class="n">col</span><span class="p">(</span><span class="s2">&quot;geometry&quot;</span><span class="p">),</span>
+</span><span id="__span-0-33"><a id="__codelineno-0-33" name="__codelineno-0-33" href="#__codelineno-0-33"></a>        <span class="n">pl</span><span class="o">.</span><span class="n">col</span><span class="p">(</span><span class="s2">&quot;geometry_boundary&quot;</span><span class="p">),</span>
+</span><span id="__span-0-34"><a id="__codelineno-0-34" name="__codelineno-0-34" href="#__codelineno-0-34"></a>    <span class="p">)</span>
+</span><span id="__span-0-35"><a id="__codelineno-0-35" name="__codelineno-0-35" href="#__codelineno-0-35"></a>    <span class="o">.</span><span class="n">sort</span><span class="p">(</span><span class="s2">&quot;name&quot;</span><span class="p">)</span>  <span class="c1"># (10)!</span>
+</span><span id="__span-0-36"><a id="__codelineno-0-36" name="__codelineno-0-36" href="#__codelineno-0-36"></a><span class="p">)</span>
+</span><span id="__span-0-37"><a id="__codelineno-0-37" name="__codelineno-0-37" href="#__codelineno-0-37"></a><span class="nb">print</span><span class="p">(</span><span class="n">lake_boundary_df</span><span class="p">)</span>
+</span></code></pre></div>
 <ol>
 <li>Reading the lakes with only the lake's name and geometry</li>
 <li>Reading the boundaries with only the country's name (SOVEREIGNT) and geometry</li>
@@ -1264,6 +1268,27 @@ print(lake_boundary_df)</p>
 <li>Selecting the columns to make the lake name and SOVEREIGNT columns show up before the lake and boundary geometry columns.</li>
 <li>Sort by the lake name just to make the results look nice in our output dataframe.</li>
 </ol>
+<div class="language-text highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>There are 24 rows in lake_df
+</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>There are 177 rows in boundary_df
+</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>shape: (36, 4)
+</span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>┌──────────────────┬──────────────────────────┬─────────────────────────────────┬─────────────────────────────────┐
+</span><span id="__span-0-5"><a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a>│ name             ┆ SOVEREIGNT               ┆ geometry                        ┆ geometry_boundary               │
+</span><span id="__span-0-6"><a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a>│ ---              ┆ ---                      ┆ ---                             ┆ ---                             │
+</span><span id="__span-0-7"><a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a>│ str              ┆ str                      ┆ struct[2]                       ┆ struct[2]                       │
+</span><span id="__span-0-8"><a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a>╞══════════════════╪══════════════════════════╪═════════════════════════════════╪═════════════════════════════════╡
+</span><span id="__span-0-9"><a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a>│ Cedar Lake       ┆ Canada                   ┆ {b&quot;\x01\x03\x00\x00\x00\x01\x0… ┆ {b&quot;\x01\x06\x00\x00\x00\x1e\x0… │
+</span><span id="__span-0-10"><a id="__codelineno-0-10" name="__codelineno-0-10" href="#__codelineno-0-10"></a>│ Great Bear Lake  ┆ Canada                   ┆ {b&quot;\x01\x03\x00\x00\x00\x01\x0… ┆ {b&quot;\x01\x06\x00\x00\x00\x1e\x0… │
+</span><span id="__span-0-11"><a id="__codelineno-0-11" name="__codelineno-0-11" href="#__codelineno-0-11"></a>│ Great Salt Lake  ┆ United States of America ┆ {b&quot;\x01\x03\x00\x00\x00\x01\x0… ┆ {b&quot;\x01\x06\x00\x00\x00\x0a\x0… │
+</span><span id="__span-0-12"><a id="__codelineno-0-12" name="__codelineno-0-12" href="#__codelineno-0-12"></a>│ Great Slave Lake ┆ Canada                   ┆ {b&quot;\x01\x03\x00\x00\x00\x01\x0… ┆ {b&quot;\x01\x06\x00\x00\x00\x1e\x0… │
+</span><span id="__span-0-13"><a id="__codelineno-0-13" name="__codelineno-0-13" href="#__codelineno-0-13"></a>│ Lago Titicaca    ┆ Bolivia                  ┆ {b&quot;\x01\x03\x00\x00\x00\x01\x0… ┆ {b&quot;\x01\x03\x00\x00\x00\x01\x0… │
+</span><span id="__span-0-14"><a id="__codelineno-0-14" name="__codelineno-0-14" href="#__codelineno-0-14"></a>│ …                ┆ …                        ┆ …                               ┆ …                               │
+</span><span id="__span-0-15"><a id="__codelineno-0-15" name="__codelineno-0-15" href="#__codelineno-0-15"></a>│ Lake Victoria    ┆ Kenya                    ┆ {b&quot;\x01\x03\x00\x00\x00\x01\x0… ┆ {b&quot;\x01\x03\x00\x00\x00\x01\x0… │
+</span><span id="__span-0-16"><a id="__codelineno-0-16" name="__codelineno-0-16" href="#__codelineno-0-16"></a>│ Lake Victoria    ┆ Uganda                   ┆ {b&quot;\x01\x03\x00\x00\x00\x01\x0… ┆ {b&quot;\x01\x03\x00\x00\x00\x01\x0… │
+</span><span id="__span-0-17"><a id="__codelineno-0-17" name="__codelineno-0-17" href="#__codelineno-0-17"></a>│ Lake Winnipeg    ┆ Canada                   ┆ {b&quot;\x01\x03\x00\x00\x00\x01\x0… ┆ {b&quot;\x01\x06\x00\x00\x00\x1e\x0… │
+</span><span id="__span-0-18"><a id="__codelineno-0-18" name="__codelineno-0-18" href="#__codelineno-0-18"></a>│ Reindeer Lake    ┆ Canada                   ┆ {b&quot;\x01\x03\x00\x00\x00\x01\x0… ┆ {b&quot;\x01\x06\x00\x00\x00\x1e\x0… │
+</span><span id="__span-0-19"><a id="__codelineno-0-19" name="__codelineno-0-19" href="#__codelineno-0-19"></a>│ Vänern           ┆ Sweden                   ┆ {b&quot;\x01\x03\x00\x00\x00\x01\x0… ┆ {b&quot;\x01\x03\x00\x00\x00\x01\x0… │
+</span><span id="__span-0-20"><a id="__codelineno-0-20" name="__codelineno-0-20" href="#__codelineno-0-20"></a>└──────────────────┴──────────────────────────┴─────────────────────────────────┴─────────────────────────────────┘
+</span></code></pre></div>
 <p>Of the original 24 lakes and 177 bounaries, we have 36 rows now, beacause there are a few that cross the borders of the boundaries and were joined to more than one.  Lake Victoria is one of these lakes, it intersects both Kenya and Uganda</p>
 <p>The resulting dataframe has a row for each lake name/geometry from the lakes dataframe and the SOVEREIGNT and geometry_boundary from the boundary df where the lake intersects an admin boundary.</p>
 <p>Many GIS don't allow for multiple geometries on a single row, but spatial polars has no issue with this, and is actually <a href="../expressions/two_geometry_column_input_expressions/">something that we can use to our advantage</a>.</p>
