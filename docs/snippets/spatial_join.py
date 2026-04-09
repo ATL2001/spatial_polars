@@ -2,20 +2,21 @@ import polars as pl
 
 from spatial_polars import scan_spatial
 
-lake_df = (
+lake_lf = (
     scan_spatial("https://naciscdn.org/naturalearth/110m/physical/ne_110m_lakes.zip")
     .select("name", "geometry")
-    .collect(engine="streaming")
 )  # (1)!
-print(f"There are {len(lake_df)} rows in lake_df")
 
-boundary_df = (
+boundary_lf = (
     scan_spatial(
-        "https://naciscdn.org/naturalearth/110m/cultural/ne_110m_admin_0_countries.zip"
+        "https://naciscdn.org/naturalearth/110m/cultural/ne_110m_admin_0_countries.zip",
     )
     .select("SOVEREIGNT", "geometry")
-    .collect(engine="streaming")
 )  # (2)!
+
+lake_df, boundary_df = pl.collect_all([lake_lf, boundary_lf])
+print(f"There are {len(lake_df)} rows in lake_df")
+print(f"There are {len(boundary_df)} rows in boundary_df")
 
 lake_boundary_df = (
     lake_df.spatial.join(  # (3)!

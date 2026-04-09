@@ -1016,14 +1016,14 @@ class SpatialFrame:
         )
         validate_width_and_radius_input(self._df, line_width)
         validate_width_and_radius_input(self._df, radius)
-        fill_color = self._make_color_array(
+        fill_color = fill_color or self._make_color_array(
             fill_cmap_col,
             fill_cmap_type,
             fill_cmap,
             fill_alpha,
             normalize_cmap_col=fill_normalize_cmap_col,
         )
-        line_color = self._make_color_array(
+        line_color = line_color or self._make_color_array(
             line_cmap_col,
             line_cmap_type,
             line_cmap,
@@ -1178,8 +1178,7 @@ class SpatialFrame:
             cmap_type,
             cmap,
         )
-        validate_width_and_radius_input(self._df, width)
-        color = self._make_color_array(
+        color = color or self._make_color_array(
             cmap_col,
             cmap_type,
             cmap,
@@ -1187,6 +1186,7 @@ class SpatialFrame:
             normalize_cmap_col=normalize_cmap_col,
         )
 
+        validate_width_and_radius_input(self._df, width)
         if isinstance(width, str):
             width = self._df.select(c(width)).to_series().to_numpy()
 
@@ -1371,14 +1371,14 @@ class SpatialFrame:
         )
         validate_width_and_radius_input(self._df, line_width)
 
-        fill_color = self._make_color_array(
+        fill_color = fill_color or self._make_color_array(
             fill_cmap_col,
             fill_cmap_type,
             fill_cmap,
             fill_alpha,
             normalize_cmap_col=fill_normalize_cmap_col,
         )
-        line_color = self._make_color_array(
+        line_color = line_color or self._make_color_array(
             line_cmap_col,
             line_cmap_type,
             line_cmap,
