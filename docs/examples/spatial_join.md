@@ -12,7 +12,7 @@ Spatial polars can perform a [spatial join](../SpatialFrame.md#spatial_polars.sp
 
 To demonstrate how we can join data together from two dataframes spatially using spatial polars, we'll join some lake polygons with some administrative boundaries to see which lakes are in which countries.
 
-```py title="Spatial Join" hl_lines="21-26" html="false"
+```python title="Spatial Join" hl_lines="21-26"
 --8<-- "spatial_join.py"
 ```
 
@@ -38,6 +38,10 @@ To demonstrate how we can join data together from two dataframes spatially using
 8. Since we're joining the dataframes with a common column name (geometry), a suffix must be applied to the columns of the right dataframe that have names that exist in the left fram, because we can't have two columns with the same name.  we'll use "_boundary" as the suffix to clarify that the geometry of the right frame came from the boundaries dataframe.
 9. Selecting the columns to make the lake name and SOVEREIGNT columns show up before the lake and boundary geometry columns.
 10. Sort by the lake name just to make the results look nice in our output dataframe.
+
+```python exec="on" result="text"
+--8<-- "spatial_join.py"
+```
 
 Of the original 24 lakes and 177 bounaries, we have 36 rows now, beacause there are a few that cross the borders of the boundaries and were joined to more than one.  Lake Victoria is one of these lakes, it intersects both Kenya and Uganda
 
