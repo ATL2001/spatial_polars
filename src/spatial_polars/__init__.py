@@ -3,15 +3,17 @@
 from .io import read_spatial, scan_spatial, spatial_series_dtype
 from .spatialexpr import SpatialExpr
 from .spatialframe import SpatialFrame
+from .spatiallazyframe import SpatialLazyFrame
 from .spatialseries import SpatialSeries
 
 __all__ = [
     "SpatialExpr",
     "SpatialFrame",
+    "SpatialLazyFrame",
     "SpatialSeries",
     "read_spatial",
     "scan_spatial",
     "spatial_series_dtype",
 ]
 
-__version__ = "0.2.4"  # dont forget pyproject.toml and uv lock
+__version__ = "0.3.0"  # dont forget pyproject.toml and uv lock

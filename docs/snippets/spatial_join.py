@@ -1,20 +1,10 @@
 import polars as pl
 
-from spatial_polars import scan_spatial
+from spatial_polars import read_spatial
 
-lake_lf = (
-    scan_spatial("https://naciscdn.org/naturalearth/110m/physical/ne_110m_lakes.zip")
-    .select("name", "geometry")
-)  # (1)!
+lake_df = read_spatial("https://naciscdn.org/naturalearth/110m/physical/ne_110m_lakes.zip")  # (1)!
+boundary_df = read_spatial("https://naciscdn.org/naturalearth/110m/cultural/ne_110m_admin_0_countries.zip")# (2)!
 
-boundary_lf = (
-    scan_spatial(
-        "https://naciscdn.org/naturalearth/110m/cultural/ne_110m_admin_0_countries.zip",
-    )
-    .select("SOVEREIGNT", "geometry")
-)  # (2)!
-
-lake_df, boundary_df = pl.collect_all([lake_lf, boundary_lf])
 print(f"There are {len(lake_df)} rows in lake_df")
 print(f"There are {len(boundary_df)} rows in boundary_df")
 

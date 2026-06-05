@@ -1,12 +1,12 @@
 [project]
 name = "spatial-polars"
-version = "0.2.4" # dont forget __init__.py and uv lock
+version = "0.3.0" # dont forget __init__.py and uv lock
 description = "A package that extends polars for working with geospatial data."
 readme = "README.md"
 authors = [
     { name = "Aaron T. Leese", email = "ATLeese@gmail.com" }
 ]
-requires-python = ">=3.9"
+requires-python = ">=3.10"
 dependencies = [
     "cloudpickle>=3.1.1", # needed for using spatialexpr in filter contexts
     "geoarrow-pyarrow>=0.1.2",
@@ -49,6 +49,11 @@ dev = [
     "mkdocstrings[python]>=0.29.1",
     "pytest>=8.3.5",
     "ruff>=0.11.11",
+    "scipy>=1.13.1",
+    "geodatasets>=2024.8.0",
+    "lonboard>=0.10.4",
+    "matplotlib>=3.7.5",
+    "palettable>=3.3.3",
 ]
 
 [tool.ruff.lint]

@@ -1,0 +1,132 @@
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="805pt" height="584pt" viewBox="0.00 0.00 805.38 584.00">
+<g id="graph0" class="graph" transform="scale(1 1) rotate(0) translate(4 580)">
+<title>polars_query</title>
+<polygon fill="white" stroke="none" points="-4,4 -4,-580 801.38,-580 801.38,4 -4,4"/>
+<!-- p2 -->
+<g id="node1" class="node">
+<title>p2</title>
+<polygon fill="none" stroke="black" points="640,-504 269.25,-504 269.25,-461.5 640,-461.5 640,-504"/>
+<text text-anchor="middle" x="454.62" y="-486.7" font-family="Monospace" font-size="14.00">simple π 4/5</text>
+<text text-anchor="middle" x="454.62" y="-469.45" font-family="Monospace" font-size="14.00">[&quot;name&quot;, &quot;SOVEREIGNT&quot;, ... 2 other columns]</text>
+</g>
+<!-- p1 -->
+<g id="node2" class="node">
+<title>p1</title>
+<polygon fill="none" stroke="black" points="549.25,-576 360,-576 360,-540 549.25,-540 549.25,-576"/>
+<text text-anchor="middle" x="454.62" y="-553.33" font-family="Monospace" font-size="14.00">SORT BY [col(&quot;name&quot;)]</text>
+</g>
+<!-- p2&#45;&gt;p1 -->
+<g id="edge1" class="edge">
+<title>p2-&gt;p1</title>
+<path fill="none" stroke="black" d="M454.62,-504.15C454.62,-511.66 454.62,-520.31 454.62,-528.41"/>
+<polygon fill="black" stroke="black" points="451.13,-528.17 454.63,-538.17 458.13,-528.17 451.13,-528.17"/>
+</g>
+<!-- p3 -->
+<g id="node3" class="node">
+<title>p3</title>
+<polygon fill="none" stroke="black" points="623.5,-425.5 285.75,-425.5 285.75,-365.75 623.5,-365.75 623.5,-425.5"/>
+<text text-anchor="middle" x="454.62" y="-408.2" font-family="Monospace" font-size="14.00">JOIN INNER</text>
+<text text-anchor="middle" x="454.62" y="-390.95" font-family="Monospace" font-size="14.00">left: [col(&quot;right_index&quot;).cast(Int64)];</text>
+<text text-anchor="middle" x="454.62" y="-373.7" font-family="Monospace" font-size="14.00">right: [col(&quot;right_index&quot;).cast(Int64)]</text>
+</g>
+<!-- p3&#45;&gt;p2 -->
+<g id="edge2" class="edge">
+<title>p3-&gt;p2</title>
+<path fill="none" stroke="black" d="M454.62,-425.92C454.62,-433.65 454.62,-442.03 454.62,-449.88"/>
+<polygon fill="black" stroke="black" points="451.13,-449.74 454.63,-459.74 458.13,-449.74 451.13,-449.74"/>
+</g>
+<!-- p4 -->
+<g id="node4" class="node">
+<title>p4</title>
+<polygon fill="none" stroke="black" points="449.62,-329.75 103.62,-329.75 103.62,-287.25 449.62,-287.25 449.62,-329.75"/>
+<text text-anchor="middle" x="276.62" y="-312.45" font-family="Monospace" font-size="14.00">simple π 3/4</text>
+<text text-anchor="middle" x="276.62" y="-295.2" font-family="Monospace" font-size="14.00">[&quot;name&quot;, &quot;geometry&quot;, ... 1 other column]</text>
+</g>
+<!-- p4&#45;&gt;p3 -->
+<g id="edge3" class="edge">
+<title>p4-&gt;p3</title>
+<path fill="none" stroke="black" d="M319.71,-330.11C338.81,-339.24 361.79,-350.23 383.33,-360.53"/>
+<polygon fill="black" stroke="black" points="381.54,-363.55 392.07,-364.71 384.56,-357.24 381.54,-363.55"/>
+</g>
+<!-- p5 -->
+<g id="node5" class="node">
+<title>p5</title>
+<polygon fill="none" stroke="black" points="441.38,-251.25 111.88,-251.25 111.88,-191.5 441.38,-191.5 441.38,-251.25"/>
+<text text-anchor="middle" x="276.62" y="-233.95" font-family="Monospace" font-size="14.00">JOIN INNER</text>
+<text text-anchor="middle" x="276.62" y="-216.7" font-family="Monospace" font-size="14.00">left: [col(&quot;left_index&quot;).cast(Int64)];</text>
+<text text-anchor="middle" x="276.62" y="-199.45" font-family="Monospace" font-size="14.00">right: [col(&quot;left_index&quot;).cast(Int64)]</text>
+</g>
+<!-- p5&#45;&gt;p4 -->
+<g id="edge4" class="edge">
+<title>p5-&gt;p4</title>
+<path fill="none" stroke="black" d="M276.62,-251.67C276.62,-259.4 276.62,-267.78 276.62,-275.63"/>
+<polygon fill="black" stroke="black" points="273.13,-275.49 276.63,-285.49 280.13,-275.49 273.13,-275.49"/>
+</g>
+<!-- p6 -->
+<g id="node6" class="node">
+<title>p6</title>
+<polygon fill="none" stroke="black" points="321.25,-143.62 0,-143.62 0,-107.62 321.25,-107.62 321.25,-143.62"/>
+<text text-anchor="middle" x="160.62" y="-120.95" font-family="Monospace" font-size="14.00">ROW INDEX name: left_index, offset: 0</text>
+</g>
+<!-- p6&#45;&gt;p5 -->
+<g id="edge5" class="edge">
+<title>p6-&gt;p5</title>
+<path fill="none" stroke="black" d="M182.17,-144.04C196.12,-155.31 214.8,-170.41 231.86,-184.2"/>
+<polygon fill="black" stroke="black" points="229.45,-186.75 239.43,-190.31 233.85,-181.31 229.45,-186.75"/>
+</g>
+<!-- p7 -->
+<g id="node7" class="node">
+<title>p7</title>
+<polygon fill="none" stroke="black" points="214,-59.75 107.25,-59.75 107.25,0 214,0 214,-59.75"/>
+<text text-anchor="middle" x="160.62" y="-42.45" font-family="Monospace" font-size="14.00">PYTHON SCAN</text>
+<text text-anchor="middle" x="160.62" y="-25.2" font-family="Monospace" font-size="14.00">π 2/38;</text>
+<text text-anchor="middle" x="160.62" y="-7.95" font-family="Monospace" font-size="14.00">σ none</text>
+</g>
+<!-- p7&#45;&gt;p6 -->
+<g id="edge6" class="edge">
+<title>p7-&gt;p6</title>
+<path fill="none" stroke="black" d="M160.62,-60.02C160.62,-71.39 160.62,-84.39 160.62,-95.74"/>
+<polygon fill="black" stroke="black" points="157.13,-95.72 160.63,-105.72 164.13,-95.72 157.13,-95.72"/>
+</g>
+<!-- p8 -->
+<g id="node8" class="node">
+<title>p8</title>
+<polygon fill="none" stroke="black" points="446,-155.5 339.25,-155.5 339.25,-95.75 446,-95.75 446,-155.5"/>
+<text text-anchor="middle" x="392.62" y="-138.2" font-family="Monospace" font-size="14.00">PYTHON SCAN</text>
+<text text-anchor="middle" x="392.62" y="-120.95" font-family="Monospace" font-size="14.00">π */2;</text>
+<text text-anchor="middle" x="392.62" y="-103.7" font-family="Monospace" font-size="14.00">σ none</text>
+</g>
+<!-- p8&#45;&gt;p5 -->
+<g id="edge7" class="edge">
+<title>p8-&gt;p5</title>
+<path fill="none" stroke="black" d="M356.56,-155.77C345.43,-164.77 333.03,-174.79 321.39,-184.19"/>
+<polygon fill="black" stroke="black" points="319.42,-181.28 313.85,-190.29 323.82,-186.73 319.42,-181.28"/>
+</g>
+<!-- p9 -->
+<g id="node9" class="node">
+<title>p9</title>
+<polygon fill="none" stroke="black" points="797.38,-326.5 467.88,-326.5 467.88,-290.5 797.38,-290.5 797.38,-326.5"/>
+<text text-anchor="middle" x="632.62" y="-303.82" font-family="Monospace" font-size="14.00">ROW INDEX name: right_index, offset: 0</text>
+</g>
+<!-- p9&#45;&gt;p3 -->
+<g id="edge8" class="edge">
+<title>p9-&gt;p3</title>
+<path fill="none" stroke="black" d="M596.17,-326.93C575.97,-336.59 550.14,-348.95 526.09,-360.45"/>
+<polygon fill="black" stroke="black" points="524.79,-357.19 517.28,-364.66 527.81,-363.51 524.79,-357.19"/>
+</g>
+<!-- p10 -->
+<g id="node10" class="node">
+<title>p10</title>
+<polygon fill="none" stroke="black" points="686,-251.25 579.25,-251.25 579.25,-191.5 686,-191.5 686,-251.25"/>
+<text text-anchor="middle" x="632.62" y="-233.95" font-family="Monospace" font-size="14.00">PYTHON SCAN</text>
+<text text-anchor="middle" x="632.62" y="-216.7" font-family="Monospace" font-size="14.00">π 2/169;</text>
+<text text-anchor="middle" x="632.62" y="-199.45" font-family="Monospace" font-size="14.00">σ none</text>
+</g>
+<!-- p10&#45;&gt;p9 -->
+<g id="edge9" class="edge">
+<title>p10-&gt;p9</title>
+<path fill="none" stroke="black" d="M632.62,-251.67C632.62,-260.53 632.62,-270.24 632.62,-279.05"/>
+<polygon fill="black" stroke="black" points="629.13,-278.81 632.63,-288.81 636.13,-278.81 629.13,-278.81"/>
+</g>
+</g>
+</svg>

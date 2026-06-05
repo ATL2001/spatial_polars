@@ -543,7 +543,6 @@ class SpatialFrame:
     def join_nearest(
         self,
         other: pl.DataFrame,
-        how: Literal["left", "inner"] = "inner",
         max_distance: float | None = None,
         on: str = "geometry",
         left_on: str | None = None,
@@ -567,15 +566,6 @@ class SpatialFrame:
         ----------
         other
             SpatialFrame to join with.
-
-        how
-            Join strategy.
-
-            * *inner*
-                Returns rows that have matching values in both tables
-            * *left*
-                Returns all rows from the left table, and the matched rows from the
-                right table
 
         max_distance
             The maximum distance to search around an input feature.
@@ -661,13 +651,13 @@ class SpatialFrame:
             self._df.with_row_index("left_index")
             .join(
                 tree_query_df,
-                how=how,
+                how="left",
                 on="left_index",
                 maintain_order=maintain_order,
             )
             .join(
                 other.with_row_index("right_index"),
-                how=how,
+                how="left",
                 on="right_index",
                 suffix=suffix,
                 maintain_order=maintain_order,
@@ -683,6 +673,9 @@ class SpatialFrame:
         left_on: str | None = None,
         right_on: str | None = None,
         suffix: str = "_right",
+        *,
+        left_all_points:bool = False,
+        right_all_points:bool = False,
     ) -> pl.DataFrame:
         r"""Perform K nearest neighbors join of centroids of geometries in two frames.
 
@@ -706,6 +699,14 @@ class SpatialFrame:
         suffix
             Suffix to append to columns with a duplicate name.
 
+        left_all_points
+            If the left geometries are already points, setting this to `True` will skip
+            a step of computing the geometry's centroid.
+
+        right_all_points
+            If the right geometries are already points, setting this to `True` will skip
+            a step of computing the geometry's centroid.
+
         Notes
         -----
             As the name implies, this KNN join method only takes into account the
@@ -722,11 +723,30 @@ class SpatialFrame:
             right_on = on
 
         self_df = self._df
-        self_centroids = shapely.centroid(self_df[left_on].spatial.to_shapely_array())
-        other_centroids = shapely.centroid(other[right_on].spatial.to_shapely_array())
 
-        self_coords = shapely.get_coordinates(self_centroids)
-        other_coords = shapely.get_coordinates(other_centroids)
+        if left_all_points:
+            self_centroids_df = self_df.select(
+                pl.col(left_on),
+            )
+        else:
+            self_centroids_df = self_df.select(
+                pl.col(left_on).spatial.centroid(),
+            )
+        if right_all_points:
+            other_centroids_df = other.select(
+                pl.col(right_on),
+            )
+        else:
+            other_centroids_df = other.select(
+                pl.col(right_on).spatial.centroid(),
+            )
+
+        self_coords = shapely.get_coordinates(
+            self_centroids_df[left_on].spatial.to_shapely_array(),
+        )
+        other_coords = shapely.get_coordinates(
+            other_centroids_df[right_on].spatial.to_shapely_array(),
+        )
 
         tree = KDTree(other_coords)
         query_result = tree.query(self_coords, k=k)

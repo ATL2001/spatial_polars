@@ -87,6 +87,7 @@ nav:
   - API:
     - io.md
     - SpatialFrame.md
+    - SpatialLazyFrame.md
     - SpatialExpr.md
   - Blog:
     - blog/index.md
