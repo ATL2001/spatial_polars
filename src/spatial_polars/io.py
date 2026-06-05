@@ -474,4 +474,4 @@ def read_spatial(
         encoding=encoding,
         bbox=bbox,
         mask=mask,
-    ).collect(engine="streaming")
+    ).collect(engine="in-memory")
