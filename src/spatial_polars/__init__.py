@@ -16,4 +16,4 @@ __all__ = [
     "spatial_series_dtype",
 ]
 
-__version__ = "0.3.0"  # dont forget pyproject.toml and uv lock
+__version__ = "0.4.0"  # dont forget pyproject.toml and uv lock
