@@ -8,6 +8,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any, Literal
 
+import numpy as np
 import polars as pl
 import pyproj
 import shapely
@@ -16,7 +17,6 @@ from polars import col as c
 from ._vendor import TransformerFromCRS, transform
 
 if TYPE_CHECKING:
-    import numpy as np
     from numpy import array
 
 
@@ -74,11 +74,19 @@ class SpatialSeries:
         crs_wkt = self._s.spatial.get_crs()
         if self._s.dtype == pl.List(pl.Struct):
             s_arrs = self._s.list.eval(pl.element().struct.field("wkb_geometry"))
-            result = s_arrs.map_elements(
-                lambda x: shapely.to_wkb(
-                    shapely.GeometryCollection(shapely.from_wkb(x)),
+            array_lengths = [len(arr) for arr in s_arrs.to_numpy().copy()]
+            indices = np.cumsum(array_lengths)[:-1]
+            flat_shapely_arr = shapely.from_wkb(
+                np.concatenate(s_arrs.to_numpy().copy()),
+            )
+            shapely_chunks = np.split(flat_shapely_arr, indices)
+            result = pl.Series(
+                shapely.to_wkb(
+                    [
+                        shapely.GeometryCollection(list(inner))
+                        for inner in shapely_chunks
+                    ],
                 ),
-                return_dtype=pl.Binary,
             )
         else:
             s_arr = self.to_shapely_array()
@@ -125,7 +133,7 @@ class SpatialSeries:
         """Compute the Cartesian distance between two geometries."""
         s_arr = self.to_shapely_array()
         if isinstance(other, pl.Series):
-            other = other.to_shapely_array()
+            other = other.spatial.to_shapely_array()
         return shapely.distance(s_arr, other)
 
     def bounds(self) -> array:
@@ -317,10 +325,6 @@ class SpatialSeries:
         (or exterior). This means that a geometry A does not "contain properly" itself,
         which contrasts with the contains function, where common points on the boundary
         are allowed.
-
-        Note: this function will prepare the geometries under the hood if needed. You
-        can prepare the geometries in advance to avoid repeated preparation when
-        calling this function multiple times.
         """
         s_arr = self.to_shapely_array()
         if isinstance(other, pl.Series):
@@ -346,7 +350,6 @@ class SpatialSeries:
 
         Disjoint implies that overlaps, touches, within, and intersects are False. Note
         missing (None) values are never disjoint.
-
         """
         s_arr = self.to_shapely_array()
         if isinstance(other, pl.Series):

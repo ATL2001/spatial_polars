@@ -9,9 +9,109 @@ from __future__ import annotations
 from typing import Any, Literal
 
 import polars as pl
+import pyproj
 import shapely
 
 from .io import spatial_series_dtype
+
+
+def _separate_points_and_other(expr: pl.Expr) -> pl.Expr:
+    """Categorize input wkb from spatial series.
+
+    Creates a struct of:
+        * point_wkb_little
+        * point_wkb_big
+        * non_point_wkb
+
+    """
+    g_bin = expr.struct.field("wkb_geometry").bin
+    return (
+        pl.when(
+            # little endian points
+            g_bin.starts_with(b"\x01\x01\x00\x00\x00")  # "point"
+            | g_bin.starts_with(b"\x01\xe9\x03\x00\x00")  # "pointZ iso"
+            | g_bin.starts_with(b"\x01\xd1\x07\x00\x00")  # "pointM iso"
+            | g_bin.starts_with(b"\x01\xb9\x0b\x00\x00")  # "pointZM iso"
+            | g_bin.starts_with(b"\x01\x01\x00\x00\x80")  # "pointZ extended"
+            | g_bin.starts_with(b"\x01\x01\x00\x00@")  # "pointM extended"
+            | g_bin.starts_with(b"\x01\x01\x00\x00\xc0"),  # "pointZM extended"
+        )
+        .then(
+            pl.struct(
+                point_wkb_little=expr.struct.field("wkb_geometry"),
+            ),
+        )
+        .when(
+            # big endian points
+            g_bin.starts_with(b"\x00\x00\x00\x00\x01")  # "point"
+            | g_bin.starts_with(b"\x00\x00\x00\x03\xe9")  # "pointZ iso"
+            | g_bin.starts_with(b"\x00\x00\x00\x07\xd1")  # "pointM iso"
+            | g_bin.starts_with(b"\x00\x00\x00\x0b\xb9")  # "pointZM iso"
+            | g_bin.starts_with(b"\x00\x80\x00\x00\x01")  # "pointZ extended"
+            | g_bin.starts_with(b"\x00@\x00\x00\x01")  # "pointM extended"
+            | g_bin.starts_with(b"\x00\xc0\x00\x00\x01"),  # "pointZM extended"
+        )
+        .then(
+            pl.struct(
+                point_wkb_big=expr.struct.field("wkb_geometry"),
+            ),
+        )
+        .otherwise(
+            pl.struct(
+                non_point_wkb=expr.struct.field("wkb_geometry"),
+            ),
+        )
+    )
+
+
+def _le_point_wkb_to_x(expr: pl.Expr) -> pl.Expr:
+    """Get x value from little endian point."""
+    return expr.bin.slice(5, 8).bin.reinterpret(dtype=pl.Float64)
+
+
+def _le_point_wkb_to_y(expr: pl.Expr) -> pl.Expr:
+    """Get y value from little endian point."""
+    return expr.bin.slice(13, 8).bin.reinterpret(dtype=pl.Float64)
+
+
+def _le_point_wkb_to_z(expr: pl.Expr) -> pl.Expr:
+    """Get z value from little endian point."""
+    return expr.bin.slice(21, 8).bin.reinterpret(dtype=pl.Float64)
+
+
+def _le_point_wkb_to_m_wo_z(expr: pl.Expr) -> pl.Expr:
+    """Get m value from little endian point without z coordinate."""
+    return expr.bin.slice(21, 8).bin.reinterpret(dtype=pl.Float64)
+
+
+def _le_point_wkb_to_m_w_z(expr: pl.Expr) -> pl.Expr:
+    """Get m value from little endian point with z coordinate."""
+    return expr.bin.slice(29, 8).bin.reinterpret(dtype=pl.Float64)
+
+
+def _be_point_wkb_to_x(expr: pl.Expr) -> pl.Expr:
+    """Get x value from big endian point."""
+    return expr.bin.slice(5, 8).bin.reinterpret(dtype=pl.Float64, endianness="big")
+
+
+def _be_point_wkb_to_y(expr: pl.Expr) -> pl.Expr:
+    """Get y value from big endian point."""
+    return expr.bin.slice(13, 8).bin.reinterpret(dtype=pl.Float64, endianness="big")
+
+
+def _be_point_wkb_to_z(expr: pl.Expr) -> pl.Expr:
+    """Get z value from big endian point."""
+    return expr.bin.slice(21, 8).bin.reinterpret(dtype=pl.Float64, endianness="big")
+
+
+def _be_point_wkb_to_m_wo_z(expr: pl.Expr) -> pl.Expr:
+    """Get m value from big endian point."""
+    return expr.bin.slice(21, 8).bin.reinterpret(dtype=pl.Float64, endianness="big")
+
+
+def _be_point_wkb_to_m_w_z(expr: pl.Expr) -> pl.Expr:
+    """Get m value from big endian point."""
+    return expr.bin.slice(29, 8).bin.reinterpret(dtype=pl.Float64, endianness="big")
 
 
 class GeometryProperties:
@@ -214,34 +314,164 @@ class GeometryProperties:
         )
 
     def get_x(self) -> pl.Expr:
-        """Return the x-coordinate of a point."""
-        return self._expr.map_batches(
-            lambda s: s.spatial.get_x(),
-            return_dtype=pl.Float64,
-            is_elementwise=True,
+        """Return the x-coordinate of a point.
+
+        This expression parses the spatial series WKB to extract the x-coordinate of a
+        point.  Non-point geometries will return nan.
+        """
+        g_bin = self._expr.struct.field("wkb_geometry").bin
+        return (
+            pl.when(
+                # little endian points
+                g_bin.starts_with(b"\x01\x01\x00\x00\x00")  # "point"
+                | g_bin.starts_with(b"\x01\xe9\x03\x00\x00")  # "pointZ iso"
+                | g_bin.starts_with(b"\x01\xd1\x07\x00\x00")  # "pointM iso"
+                | g_bin.starts_with(b"\x01\xb9\x0b\x00\x00")  # "pointZM iso"
+                | g_bin.starts_with(b"\x01\x01\x00\x00\x80")  # "pointZ extended"
+                | g_bin.starts_with(b"\x01\x01\x00\x00@")  # "pointM extended"
+                | g_bin.starts_with(b"\x01\x01\x00\x00\xc0"),  # "pointZM extended"
+            )
+            .then(
+                _le_point_wkb_to_x(self._expr.struct.field("wkb_geometry")),
+            )
+            .when(
+                # big endian points
+                g_bin.starts_with(b"\x00\x00\x00\x00\x01")  # "point"
+                | g_bin.starts_with(b"\x00\x00\x00\x03\xe9")  # "pointZ iso"
+                | g_bin.starts_with(b"\x00\x00\x00\x07\xd1")  # "pointM iso"
+                | g_bin.starts_with(b"\x00\x00\x00\x0b\xb9")  # "pointZM iso"
+                | g_bin.starts_with(b"\x00\x80\x00\x00\x01")  # "pointZ extended"
+                | g_bin.starts_with(b"\x00@\x00\x00\x01")  # "pointM extended"
+                | g_bin.starts_with(b"\x00\xc0\x00\x00\x01"),  # "pointZM extended"
+            )
+            .then(
+                _be_point_wkb_to_x(self._expr.struct.field("wkb_geometry")),
+            )
+            .otherwise(
+                pl.lit(float("nan"), dtype=pl.Float64),
+            )
         )
 
     def get_y(self) -> pl.Expr:
-        """Return the y-coordinate of a point."""
-        return self._expr.map_batches(
-            lambda s: s.spatial.get_y(),
-            return_dtype=pl.Float64,
-            is_elementwise=True,
+        """Return the y-coordinate of a point.
+
+        This expression parses the spatial series WKB to extract the y-coordinate of a
+        point.  Non-point geometries will return nan.
+        """
+        g_bin = self._expr.struct.field("wkb_geometry").bin
+        return (
+            pl.when(
+                # little endian points
+                g_bin.starts_with(b"\x01\x01\x00\x00\x00")  # "point"
+                | g_bin.starts_with(b"\x01\xe9\x03\x00\x00")  # "pointZ iso"
+                | g_bin.starts_with(b"\x01\xd1\x07\x00\x00")  # "pointM iso"
+                | g_bin.starts_with(b"\x01\xb9\x0b\x00\x00")  # "pointZM iso"
+                | g_bin.starts_with(b"\x01\x01\x00\x00\x80")  # "pointZ extended"
+                | g_bin.starts_with(b"\x01\x01\x00\x00@")  # "pointM extended"
+                | g_bin.starts_with(b"\x01\x01\x00\x00\xc0"),  # "pointZM extended"
+            )
+            .then(
+                _le_point_wkb_to_y(self._expr.struct.field("wkb_geometry")),
+            )
+            .when(
+                # big endian points
+                g_bin.starts_with(b"\x00\x00\x00\x00\x01")  # "point"
+                | g_bin.starts_with(b"\x00\x00\x00\x03\xe9")  # "pointZ iso"
+                | g_bin.starts_with(b"\x00\x00\x00\x07\xd1")  # "pointM iso"
+                | g_bin.starts_with(b"\x00\x00\x00\x0b\xb9")  # "pointZM iso"
+                | g_bin.starts_with(b"\x00\x80\x00\x00\x01")  # "pointZ extended"
+                | g_bin.starts_with(b"\x00@\x00\x00\x01")  # "pointM extended"
+                | g_bin.starts_with(b"\x00\xc0\x00\x00\x01"),  # "pointZM extended"
+            )
+            .then(
+                _be_point_wkb_to_y(self._expr.struct.field("wkb_geometry")),
+            )
+            .otherwise(
+                pl.lit(float("nan"), dtype=pl.Float64),
+            )
         )
 
     def get_z(self) -> pl.Expr:
-        """Return the z-coordinate of a point."""
-        return self._expr.map_batches(
-            lambda s: s.spatial.get_z(),
-            return_dtype=pl.Float64,
-            is_elementwise=True,
+        """Return the z-coordinate of a point.
+
+        This expression parses the spatial series WKB to extract the z-coordinate of a
+        point.  Non-point geometries, and points without a Z value will return nan.
+        """
+        g_bin = self._expr.struct.field("wkb_geometry").bin
+        return (
+            pl.when(
+                # little endian points
+                g_bin.starts_with(b"\x01\xe9\x03\x00\x00")  # "pointZ iso"
+                | g_bin.starts_with(b"\x01\xb9\x0b\x00\x00")  # "pointZM iso"
+                | g_bin.starts_with(b"\x01\x01\x00\x00\x80")  # "pointZ extended"
+                | g_bin.starts_with(b"\x01\x01\x00\x00\xc0"),  # "pointZM extended"
+            )
+            .then(
+                _le_point_wkb_to_z(self._expr.struct.field("wkb_geometry")),
+            )
+            .when(
+                # big endian points
+                g_bin.starts_with(b"\x00\x00\x00\x03\xe9")  # "pointZ iso"
+                | g_bin.starts_with(b"\x00\x00\x00\x0b\xb9")  # "pointZM iso"
+                | g_bin.starts_with(b"\x00\x80\x00\x00\x01")  # "pointZ extended"
+                | g_bin.starts_with(b"\x00\xc0\x00\x00\x01"),  # "pointZM extended"
+            )
+            .then(
+                _be_point_wkb_to_z(self._expr.struct.field("wkb_geometry")),
+            )
+            .otherwise(
+                pl.lit(float("nan"), dtype=pl.Float64),
+            )
         )
 
     def get_m(self) -> pl.Expr:
-        """Return the m-coordinate of a point."""
+        """Return the m-coordinate of a point.
+
+        This expression parses the spatial series WKB to extract the m-coordinate of a
+        point.  Non-point geometries, and points without an M value will return nan.
+        """
+        g_bin = self._expr.struct.field("wkb_geometry").bin
+        return (
+            pl.when(
+                # little endian points
+                g_bin.starts_with(b"\x01\xd1\x07\x00\x00")  # "pointM iso"
+                | g_bin.starts_with(b"\x01\x01\x00\x00@"),  # "pointM extended"
+            )
+            .then(
+                _le_point_wkb_to_m_wo_z(self._expr.struct.field("wkb_geometry")),
+            )
+            .when(
+                g_bin.starts_with(b"\x01\xb9\x0b\x00\x00")  # "pointZM iso"
+                | g_bin.starts_with(b"\x01\x01\x00\x00\xc0"),  # "pointZM extended"
+            )
+            .then(
+                _le_point_wkb_to_m_w_z(self._expr.struct.field("wkb_geometry")),
+            )
+            .when(
+                # big endian points
+                g_bin.starts_with(b"\x00\x00\x00\x07\xd1")  # "pointM iso"
+                | g_bin.starts_with(b"\x00@\x00\x00\x01")  # "pointM extended"
+            )
+            .then(
+                _be_point_wkb_to_m_wo_z(self._expr.struct.field("wkb_geometry")),
+            )
+            .when(
+                g_bin.starts_with(b"\x00\x00\x00\x0b\xb9")  # "pointZM iso"
+                | g_bin.starts_with(b"\x00\xc0\x00\x00\x01"),  # "pointZM extended"
+            )
+            .then(
+                _be_point_wkb_to_m_w_z(self._expr.struct.field("wkb_geometry")),
+            )
+            .otherwise(
+                pl.lit(float("nan"), dtype=pl.Float64),
+            )
+        )
+
+    def get_coordinates(self) -> pl.Expr:
+        """Return the coordinates of a geometry as a list of floats."""
         return self._expr.map_batches(
-            lambda s: s.spatial.get_m(),
-            return_dtype=pl.Float64,
+            lambda s: s.spatial.get_coordinates(),
+            return_dtype=pl.List(pl.Float64),
             is_elementwise=True,
         )
 
@@ -288,10 +518,7 @@ class Measurement:
             )
         # expect struct with two geometries.
         return self._expr.map_batches(
-            lambda combined: shapely.distance(
-                combined.struct[0].spatial.to_shapely_array(),
-                combined.struct[1].spatial.to_shapely_array(),
-            ),
+            lambda combined: combined.struct[0].spatial.distance(combined.struct[1]),
             return_dtype=pl.Float64,
             is_elementwise=True,
         )
@@ -858,12 +1085,8 @@ class Predicates:
                 return_dtype=pl.Boolean,
                 is_elementwise=True,
             )
-        # expect struct with two geometries.
         return self._expr.map_batches(
-            lambda combined: shapely.intersects(
-                combined.struct[0].spatial.to_shapely_array(),
-                combined.struct[1].spatial.to_shapely_array(),
-            ),
+            lambda combined: combined.struct[0].spatial.intersects(combined.struct[1]),
             return_dtype=pl.Boolean,
             is_elementwise=True,
         )
@@ -1091,6 +1314,73 @@ class Predicates:
 
         """  # NOQA:E501
         if other is not None:
+            if isinstance(other, shapely.Point):
+                # separate little endian, big endian and non-point geometries
+                # into different fields of a struct, so they can be processed
+                # differently. if we supply the wkb to a single
+                # pl.when(le).then().when(be).then().othwewise(other)
+                # without separating the geometries into different parts of a
+                # struct all the expressions are evaluated in parallel
+                # and using shapely will still execute and the fast path of parsing the
+                # wkb and doing the math with polars will be pointless
+                # but if we separate the WKB to different fields of a struct
+                # if all our WKB is le or be points, then the non_point field in the
+                # struct will be full of Nones, and when we use
+                # shapely.dwithin(shapely.from_wkb(), other, distance) it will return
+                # None back to us very quickly.  This still isn't ideal, creating the
+                # struct is not free, but when run with 6M LE WKB points, this is
+                # processing in ~1/2 the time.
+
+                separated = _separate_points_and_other(self._expr)
+                # pythagorean theorem to other within distance little endian
+                le_to_other_dwithin = (
+                    (
+                        _le_point_wkb_to_x(
+                            separated.struct.field("point_wkb_little"),
+                        )
+                        - other.x
+                    )
+                    ** 2
+                    + (
+                        _le_point_wkb_to_y(separated.struct.field("point_wkb_little"))
+                        - other.y
+                    )
+                    ** 2
+                ).sqrt() <= distance
+
+                # pythagorean theorem to other within distance big endian
+                be_to_other_dwithin = (
+                    (
+                        _be_point_wkb_to_x(separated.struct.field("point_wkb_big"))
+                        - other.x
+                    )
+                    ** 2
+                    + (
+                        _be_point_wkb_to_y(separated.struct.field("point_wkb_big"))
+                        - other.y
+                    )
+                    ** 2
+                ).sqrt() <= distance
+
+                # shapely fallback for non-points
+                shapely_dwithin = (
+                    # fall back to shapely for all other geometry types.
+                    separated.struct.field("non_point_wkb").map_batches(
+                        lambda s: shapely.dwithin(shapely.from_wkb(s), other, distance),
+                        return_dtype=pl.Boolean,
+                        is_elementwise=True,
+                    )
+                )
+                return (
+                    (le_to_other_dwithin)
+                    .fill_null(
+                        be_to_other_dwithin,
+                    )
+                    .fill_null(
+                        shapely_dwithin,
+                    )
+                )
+
             return self._expr.map_batches(
                 lambda s: s.spatial.dwithin(other, distance),
                 return_dtype=pl.Boolean,
@@ -2306,10 +2596,9 @@ class SpatialExpr(
             The coordinate reference system of the data.
 
         """
-        return self._expr.map_batches(
-            lambda s: s.spatial.from_WKB(crs=crs),
-            return_dtype=spatial_series_dtype,
-        )
+        crs_wkt = pyproj.CRS.from_user_input(crs).to_wkt()
+        crs = pl.lit(crs_wkt, dtype=pl.Categorical).alias("crs")
+        return pl.struct(self._expr.alias("wkb_geometry"), crs).name.keep()
 
     def from_WKT(self, crs: Any = 4326) -> pl.Expr:  #  NOQA:ANN401, N802
         """Return a spatial series from a series of WKT.
