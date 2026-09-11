@@ -141,6 +141,86 @@ point_zm_big_endian_iso_wkb = b"\x00\x00\x00\x0b\xb9\x00\x00\x00\x00\x00\x00\x00
 point_zm_big_endian_extended_wkb = b"\x00\xc0\x00\x00\x01\x00\x00\x00\x00\x00\x00\x00\x00?\xf0\x00\x00\x00\x00\x00\x00@\x00\x00\x00\x00\x00\x00\x00@\x08\x00\x00\x00\x00\x00\x00"  # noqa: E501
 
 
+extended_points = [
+    point_little_endian_extended_wkb,
+    point_z_little_endian_extended_wkb,
+    point_m_little_endian_extended_wkb,
+    point_zm_little_endian_extended_wkb,
+    point_big_endian_extended_wkb,
+    point_z_big_endian_extended_wkb,
+    point_m_big_endian_extended_wkb,
+    point_zm_big_endian_extended_wkb,
+]
+little_endian_extended_with_srid = [
+    shapely.to_wkb(
+        shapely.set_srid(shapely.from_wkb(pt), 4326),
+        byte_order=1,
+        flavor="extended",
+        include_srid=True,
+    )
+    for pt in extended_points
+]
+big_endian_extended_with_srid = [
+    shapely.to_wkb(
+        shapely.set_srid(shapely.from_wkb(pt), 4326),
+        byte_order=0,
+        flavor="extended",
+        include_srid=True,
+    )
+    for pt in extended_points
+]
+
+extended_points_z = [
+    point_z_little_endian_extended_wkb,
+    point_zm_little_endian_extended_wkb,
+    point_z_big_endian_extended_wkb,
+    point_zm_big_endian_extended_wkb,
+]
+little_endian_extended_z_with_srid = [
+    shapely.to_wkb(
+        shapely.set_srid(shapely.from_wkb(pt), 4326),
+        byte_order=1,
+        flavor="extended",
+        include_srid=True,
+    )
+    for pt in extended_points_z
+]
+big_endian_extended_z_with_srid = [
+    shapely.to_wkb(
+        shapely.set_srid(shapely.from_wkb(pt), 4326),
+        byte_order=0,
+        flavor="extended",
+        include_srid=True,
+    )
+    for pt in extended_points_z
+]
+
+extended_points_m = [
+    point_m_little_endian_extended_wkb,
+    point_zm_little_endian_extended_wkb,
+    point_m_big_endian_extended_wkb,
+    point_zm_big_endian_extended_wkb,
+]
+little_endian_extended_m_with_srid = [
+    shapely.to_wkb(
+        shapely.set_srid(shapely.from_wkb(pt), 4326),
+        byte_order=1,
+        flavor="extended",
+        include_srid=True,
+    )
+    for pt in extended_points_m
+]
+big_endian_extended_m_with_srid = [
+    shapely.to_wkb(
+        shapely.set_srid(shapely.from_wkb(pt), 4326),
+        byte_order=0,
+        flavor="extended",
+        include_srid=True,
+    )
+    for pt in extended_points_m
+]
+
+
 @pytest.fixture
 def all_points_wkb() -> list[bytes]:
     """List of points wkb iso/extended big/little endian.
@@ -164,6 +244,8 @@ def all_points_wkb() -> list[bytes]:
         point_m_big_endian_extended_wkb,
         point_zm_big_endian_iso_wkb,
         point_zm_big_endian_extended_wkb,
+        *little_endian_extended_with_srid,
+        *big_endian_extended_with_srid,
     ]
 
 
@@ -182,6 +264,8 @@ def z_points_wkb() -> list[bytes]:
         point_z_big_endian_extended_wkb,
         point_zm_big_endian_iso_wkb,
         point_zm_big_endian_extended_wkb,
+        *little_endian_extended_z_with_srid,
+        *big_endian_extended_z_with_srid,
     ]
 
 
@@ -200,6 +284,8 @@ def m_points_wkb() -> list[bytes]:
         point_m_big_endian_extended_wkb,
         point_zm_big_endian_iso_wkb,
         point_zm_big_endian_extended_wkb,
+        *little_endian_extended_m_with_srid,
+        *big_endian_extended_m_with_srid,
     ]
 
 
@@ -240,10 +326,10 @@ def non_points_wkb() -> list[bytes]:
         ),
     ]
     for byte_order in [1, 0]:
-        for flavor in ["iso", "extended"]:
-            for geom in geoms:
-                wkbs.append(shapely.to_wkb(geom, byte_order=byte_order, flavor=flavor))  # noqa: PERF401
-
+        for geom in geoms:
+            wkbs.append(shapely.to_wkb(geom, byte_order=byte_order, flavor="iso"))
+            wkbs.append(shapely.to_wkb(geom, byte_order=byte_order, flavor="extended"))
+            wkbs.append(shapely.to_wkb(shapely.set_srid(geom, 4326), byte_order=byte_order, flavor="extended"))
     return wkbs
 
 
