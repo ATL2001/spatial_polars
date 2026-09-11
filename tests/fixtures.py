@@ -329,7 +329,13 @@ def non_points_wkb() -> list[bytes]:
         for geom in geoms:
             wkbs.append(shapely.to_wkb(geom, byte_order=byte_order, flavor="iso"))
             wkbs.append(shapely.to_wkb(geom, byte_order=byte_order, flavor="extended"))
-            wkbs.append(shapely.to_wkb(shapely.set_srid(geom, 4326), byte_order=byte_order, flavor="extended"))
+            wkbs.append(
+                shapely.to_wkb(
+                    shapely.set_srid(geom, 4326),
+                    byte_order=byte_order,
+                    flavor="extended",
+                ),
+            )
     return wkbs
 
 
