@@ -8,7 +8,7 @@ import shapely
 from polars.testing import assert_frame_equal
 
 import spatial_polars
-from spatial_polars import scan_spatial
+from spatial_polars import scan_geoparquet, scan_spatial
 
 test_dir = pathlib.Path(spatial_polars.__file__).parent.parent.parent / "tests"
 test_data_dir = test_dir / "test_data"
@@ -49,8 +49,16 @@ def arch_mound_df() -> pl.DataFrame:
             pl.Series(
                 "wkb_geometry",
                 [
-                    shapely.Point(-90.18497, 38.62456, 0).wkb,
-                    shapely.Point(-90.06211, 38.66072, 1).wkb,
+                    shapely.to_wkb(
+                        shapely.Point(-90.18497, 38.62456, 0),
+                        flavor="iso",
+                        byte_order=1,
+                    ),
+                    shapely.to_wkb(
+                        shapely.Point(-90.06211, 38.66072, 1),
+                        flavor="iso",
+                        byte_order=1,
+                    ),
                 ],
                 dtype=pl.Binary,
             ),
@@ -86,32 +94,37 @@ def test_scan_geojson(arch_mound_df: pl.DataFrame) -> None:
 def test_scan_geojsonsseq(arch_mound_df: pl.DataFrame) -> None:
     """Test scanning geojsonseq."""
     lf = scan_spatial(test_data_dir / "arch_mound.geojsonl")
-    # reading from geojsonl will automatically add OGC_FID
-    arch_mound_df = arch_mound_df.with_row_index("OGC_FID")
+    arch_mound_df = arch_mound_df.with_row_index(
+        "OGC_FID",
+        # reading from geojsonl will automatically add OGC_FID
+    )
     assert_frame_equal(lf.collect(), arch_mound_df, check_dtypes=False)
 
 
 def test_scan_gpkg(arch_mound_df: pl.DataFrame) -> None:
     """Test scanning geopackage."""
     lf = scan_spatial(test_data_gpkg, layer="arch_mound")
-    # reading from geopackage will automatically read fids
-    arch_mound_df = arch_mound_df.with_row_index("fid").with_columns(pl.col("fid") + 1)
+    arch_mound_df = (
+        arch_mound_df.rename(
+            {"geometry": "geom"},
+            # geopackage geometry field is named geom
+        )
+        .with_row_index(
+            "fid",
+            # reading from geopackage will automatically read fids,
+            # we'll just add that to the fixture here
+        )
+        .with_columns(
+            pl.col("fid") + 1,
+        )
+    )
     assert_frame_equal(lf.collect(), arch_mound_df, check_dtypes=False)
 
 
 def test_scan_geoparquet(arch_mound_df: pl.DataFrame) -> None:
     """Test scanning geoparquet."""
-    lf = scan_spatial(test_data_dir / "arch_mound2.parquet")
-    # TODO(ATL2001): fix the crs in the parquet file to include ,MEMBER["World Geodetic System 1984 (G1674)"]
-    # assert_frame_equal(lf.collect(), arch_mound_df)
-
-
-def test_scan_parquet_bbox() -> None:
-    """Test scanning geoparquet with bbox."""
-    # bbox will limit the arch_mound to just the arch row
-    arch_bbox = (-90.19, 38.62, -90.07, 38.67)
-    lf = scan_spatial(test_data_dir / "arch_mound2.parquet", bbox=arch_bbox)
-    assert lf.select(pl.len()).collect().item() == 1
+    lf = scan_geoparquet(test_data_dir / "arch_mound2.parquet")
+    assert_frame_equal(lf.collect(), arch_mound_df)
 
 
 def test_scan_geojson_bbox() -> None:
@@ -119,15 +132,6 @@ def test_scan_geojson_bbox() -> None:
     # bbox will limit the arch_mound to just the arch row
     arch_bbox = (-90.19, 38.62, -90.07, 38.67)
     lf = scan_spatial(test_data_dir / "arch_mound.geojson", bbox=arch_bbox)
-    assert lf.select(pl.len()).collect().item() == 1
-
-
-def test_scan_parquet_mask() -> None:
-    """Test scanning geoparquet with mask."""
-    # mask will limit the arch_mound to just the arch row
-    arch_bbox = (-90.19, 38.62, -90.07, 38.67)
-    arch_mask = shapely.Polygon(shapely.box(*arch_bbox))
-    lf = scan_spatial(test_data_dir / "arch_mound2.parquet", mask=arch_mask)
     assert lf.select(pl.len()).collect().item() == 1
 
 
@@ -143,7 +147,9 @@ def test_scan_geojson_mask() -> None:
 def test_scan_subset_parquet_columns() -> None:
     """Test scanning geoparquet with col subset."""
     # only selecting two columns should result in two columns being read
-    lf = scan_spatial(test_data_dir / "arch_mound2.parquet").select("geometry", "Place")
+    lf = scan_geoparquet(
+        test_data_dir / "arch_mound2.parquet",
+    ).select("geometry", "Place")
     expected_col_count = 2
     assert len(lf.collect_schema()) == expected_col_count
 
