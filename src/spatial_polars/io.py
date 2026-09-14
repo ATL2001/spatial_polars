@@ -6,19 +6,26 @@ This module provides functions for creating polars dataframes from spatial sourc
 from __future__ import annotations
 
 import json
+import warnings
 from pathlib import Path
-from typing import TYPE_CHECKING
+from typing import (
+    IO,
+    TYPE_CHECKING,
+    Any,
+)
 
 import polars as pl
 import pyarrow.parquet as _pq
 import pyogrio
 import pyproj
-import shapely
 from polars.io.plugins import register_io_source
 
 if TYPE_CHECKING:
     from collections.abc import Iterator
     from io import BytesIO
+    from typing import TypeAlias
+
+    import shapely
 
 __all__ = [
     "read_spatial",
@@ -26,6 +33,18 @@ __all__ = [
     "spatial_series_dtype",
 ]
 
+FileSource: TypeAlias = (
+    str
+    | Path
+    | IO[bytes]
+    | bytes
+    | list[str]
+    | list[Path]
+    | list[IO[bytes]]
+    | list[bytes]
+)
+
+pl.register_extension_type("geoarrow.wkb", as_storage=True)
 spatial_series_dtype = pl.Struct({"wkb_geometry": pl.Binary, "crs": pl.Categorical})
 
 PYOGRIO_POLARS_DTYPES = {
@@ -52,19 +71,93 @@ PYOGRIO_POLARS_DTYPES = {
 }
 
 
-def scan_spatial(  # NOQA:C901,PLR0915
+def scan_geoparquet(source: FileSource, kwargs: Any=None) -> pl.LazyFrame:  # noqa: ANN401
+    """Scan a geoparquet file and return a spatial LazyFrame.
+
+    A wrapper around pl.scan_parquet that parses the geoparquet metadata and adds the
+    crs of all geometry columns to the geometry struct.
+
+    Parameters
+    ----------
+    source
+        Path(s) to a file or directory When needing to authenticate for scanning cloud
+        locations, see the storage_options parameter.
+
+    kwargs
+        Additional keyword arguments to be passed to [pl.scan_parquet](https://docs.pola.rs/api/python/stable/reference/api/polars.scan_parquet.html)
+
+    """
+    if kwargs is None:
+        kwargs = {}
+    lf = pl.scan_parquet(source, **kwargs)
+
+    table = _pq.read_table(source)
+    table_metadata = table.schema.metadata
+    if table_metadata is None:
+        warnings.warn(
+            "No schema metadata found in parquet file. No columns"
+            " converted to spatial polars geometry struct.",
+            stacklevel=2,
+        )
+        return lf
+    if b"geo" not in table_metadata:
+        warnings.warn(
+            "No geoparquet metadata found in parquet file. No columns"
+            " converted to spatial polars geometry struct.",
+            stacklevel=2,
+        )
+        return lf
+
+    geo_meta = json.loads(table_metadata[b"geo"])
+    columns_meta = geo_meta["columns"]
+
+    for geom_col_name, geom_col_meta in columns_meta.items():
+        if "crs" in geom_col_meta:
+            # convert whatever it is WKT2_2019
+            crs_wkt = pyproj.CRS.from_user_input(geom_col_meta["crs"]).to_wkt(
+                "WKT2_2019",
+            )
+        else:
+            # crs is optional, default is OGC:CRS84
+            crs_wkt = pyproj.CRS.from_user_input("OGC:CRS84").to_wkt(
+                "WKT2_2019",
+            )
+        lf = lf.with_columns(
+            pl.col(geom_col_name).spatial.from_WKB(crs_wkt),
+        )
+    return lf
+
+def read_geoparquet(source: FileSource, kwargs: Any=None)-> pl.DataFrame:  # noqa: ANN401
+    """Read a geoparquet file and return a spatial DataFrame.
+
+    A wrapper around `scan_geoparquet` that immediately collects the dataframe.
+
+    Parameters
+    ----------
+    source
+        Path(s) to a file or directory When needing to authenticate for scanning cloud
+        locations, see the storage_options parameter.
+
+    kwargs
+        Additional keyword arguments to be passed to [pl.scan_parquet](https://docs.pola.rs/api/python/stable/reference/api/polars.scan_parquet.html)
+
+    """
+    if kwargs is None:
+        kwargs = {}
+    return scan_geoparquet(source, kwargs).collect()
+
+def scan_spatial(  # NOQA:C901
     path_or_buffer: str | Path | BytesIO,
     layer: str | int | None = None,
     encoding: str | None = None,
     bbox: tuple[float, float, float, float] | None = None,
     mask: shapely.Polygon | None = None,
 ) -> pl.LazyFrame:
-    r"""Scan a data source [supported by pyogrio](https://pyogrio.readthedocs.io/en/stable/supported_formats.html) or a geoparquet file to produce a polars LazyFrame.
+    r"""Scan a data source [supported by pyogrio](https://pyogrio.readthedocs.io/en/stable/supported_formats.html) to produce a polars LazyFrame.
 
     Note
     ----
-    Although geoparquet is supported, this implementation, in its current state, leaves
-    a lot to be desired.
+    To scan a geoparquet file, use the `scan_geoparquet` function.
 
     Parameters
     ----------
@@ -101,6 +194,7 @@ def scan_spatial(  # NOQA:C901,PLR0915
     --------
     **Scanning a layer from a geopackage:**
 
+    >>> from spatial_polars import scan_spatial
     >>> my_geopackage = r"c:\data\hiking_club.gpkg"
     >>> lf = scan_spatial(my_geopackage, layer="hike")
     >>> lf
@@ -120,6 +214,7 @@ def scan_spatial(  # NOQA:C901,PLR0915
 
     **Scanning a shapefile from within a zipped directory:**
 
+    >>> from spatial_polars import scan_spatial
     >>> zipped_shapefiles = r"C:\data\illinois-latest-free.shp.zip"
     >>> lf = scan_spatial(zipped_shapefiles, layer="gis_osm_roads_free_1")
     >>> lf
@@ -131,199 +226,110 @@ def scan_spatial(  # NOQA:C901,PLR0915
     if isinstance(path_or_buffer, (str, Path)) and str(path_or_buffer).endswith(
         ".parquet",
     ):
-        # TODO(ATL2001): look into libgdal-arrow-parquet from conda forge
-        # https://pyogrio.readthedocs.io/en/latest/install.html#conda-forge
-        schema = pl.scan_parquet(path_or_buffer).collect_schema()
-        if schema.get("geometry") is not None:
-            schema["geometry"] = spatial_series_dtype
-        if bbox is not None:
-            mask = shapely.Polygon(shapely.box(*bbox))
-
-        def source_generator(  # NOQA:C901,PLR0912
-            with_columns: list[str] | None,
-            predicate: pl.Expr | None,
-            n_rows: int | None,
-            batch_size: int | None,
-        ) -> Iterator[pl.DataFrame]:
-            """Create the source.
-
-            This function will be registered as IO source. for geoparquet
-            """
-            if mask is not None and "geometry" not in with_columns:
-                with_columns.append("geometry")
-
-            tab = _pq.read_table(path_or_buffer)
-            tab_metadata = tab.schema.metadata if tab.schema.metadata else {}
-            if b"geo" in tab_metadata:
-                geo_meta = json.loads(tab_metadata[b"geo"])
-            else:
-                geo_meta = {}
-            geom_col = geo_meta["primary_column"]
-            crs_wkt = pyproj.CRS(geo_meta["columns"][geom_col]["crs"]).to_wkt(
-                "WKT2_2019",
-            )
-
-            if batch_size is None:
-                batch_size = 10000
-
-            if with_columns is None or "geometry" in with_columns:
-                read_geometry = True
-            else:
-                read_geometry = False
-
-            lf = pl.scan_parquet(path_or_buffer)
-
-            if with_columns is not None:
-                lf = lf.select(with_columns)
-
-            if predicate is not None:
-                lf = lf.filter(predicate)
-
-            previous_max = 0
-            while n_rows is None or n_rows > 0:
-                batch = lf.slice(previous_max, previous_max + batch_size).collect()
-                if batch.height is None or batch.height == 0:
-                    break
-                if n_rows is not None and n_rows <= 0:
-                    break
-
-                if read_geometry:
-                    # get the geometries from the batch
-                    geometries = batch[0:n_rows][geom_col]
-                    shapely_goms = shapely.from_wkb(geometries)
-                    geometries = shapely.to_wkb(shapely_goms)
-
-                    # create the dataframe with the non geometry columns
-                    # then add struct column with the WKB geometries/CRS
-                    batch_df = pl.DataFrame(
-                        batch[0:n_rows].drop(geom_col),
-                    ).with_columns(
-                        pl.struct(
-                            pl.Series("wkb_geometry", geometries, dtype=pl.Binary),
-                            pl.lit(crs_wkt, dtype=pl.Categorical).alias("crs"),
-                        ).alias("geometry"),
-                    )
-                else:
-                    batch_df = pl.DataFrame(batch[0:n_rows])
-                previous_max += batch_df.height
-
-                if n_rows is not None:
-                    n_rows -= batch_df.height
-
-                if predicate is not None:
-                    batch_df = batch_df.filter(predicate)
-
-                if mask is not None:
-                    batch_df = batch_df.filter(
-                        pl.col("geometry").spatial.intersects(mask),
-                    )
-                if mask is not None and "geometry" not in with_columns:
-                    batch_df = batch_df.drop("geometry")
-
-                yield batch_df
-
-    else:
-        # not geoparquet
-        layer_info = pyogrio.read_info(path_or_buffer, layer=layer, encoding=encoding)
-        schema = dict(
-            zip(
-                layer_info["fields"],
-                [PYOGRIO_POLARS_DTYPES[dt] for dt in layer_info["dtypes"]],
-            ),
+        warnings.warn(
+            "For geoparquet data, use `scan_geoparquet()` or `read_geoparquet()`.",
+            stacklevel=2,
         )
-        if layer_info.get("fid_column"):
-            schema[layer_info.get("fid_column")] = pl.Int64
-        if layer_info.get("geometry_type"):
-            schema["geometry"] = spatial_series_dtype
+    layer_info = pyogrio.read_info(path_or_buffer, layer=layer, encoding=encoding)
+    schema = dict(
+        zip(
+            layer_info["fields"],
+            [PYOGRIO_POLARS_DTYPES[dt] for dt in layer_info["dtypes"]],
+            strict=True,
+        ),
+    )
 
-        def source_generator(  # NOQA:C901,PLR0912
-            with_columns: list[str] | None,
-            predicate: pl.Expr | None,
-            n_rows: int | None,
-            batch_size: int | None,
-        ) -> Iterator[pl.DataFrame]:
-            """Create the source.
+    pyogrio_g_col_name = None
+    ret_g_col_name = None
+    if layer_info.get("fid_column"):
+        schema[layer_info.get("fid_column")] = pl.Int64
+    if layer_info.get("geometry_type"):
+        pyogrio_g_col_name = layer_info["geometry_name"]
+        if pyogrio_g_col_name == "":
+            pyogrio_g_col_name = "wkb_geometry"
+            ret_g_col_name = "geometry"
+        else:
+            ret_g_col_name = pyogrio_g_col_name
+        schema[ret_g_col_name] = spatial_series_dtype
 
-            This function will be registered as IO source.
-            """
-            return_fids = False
+    def source_generator(  # NOQA:C901,PLR0912
+        with_columns: list[str] | None,
+        predicate: pl.Expr | None,
+        n_rows: int | None,
+        batch_size: int | None,
+    ) -> Iterator[pl.DataFrame]:
+        """Create the source.
 
-            if batch_size is None:
-                batch_size = 100
+        This function will be registered as IO source.
+        """
+        return_fids = False
 
-            if with_columns is None:
-                read_geometry = True
-                return_fids = True
-            elif "geometry" in with_columns:
-                read_geometry = True
-                with_columns.remove("geometry")
-            else:
-                read_geometry = False
+        if batch_size is None:
+            batch_size = 100
 
-            if (
-                with_columns is not None
-                and layer_info.get("fid_column") in with_columns
-            ):
-                return_fids = True
-                with_columns.remove(layer_info.get("fid_column"))
+        if with_columns is None:
+            read_geometry = True
+            return_fids = True
+        elif ret_g_col_name in with_columns:
+            read_geometry = True
+            with_columns.remove(ret_g_col_name)
+        else:
+            read_geometry = False
 
-            with pyogrio.open_arrow(
-                path_or_buffer,
-                layer=layer,
-                encoding=encoding,
-                columns=with_columns,
-                return_fids=return_fids,
-                read_geometry=read_geometry,
-                force_2d=False,
-                bbox=bbox,
-                mask=mask,
-                batch_size=batch_size,
-                use_pyarrow=True,
-            ) as source:
-                meta, reader = source
+        if (
+            with_columns is not None
+            and layer_info.get("fid_column") in with_columns
+        ):
+            return_fids = True
+            with_columns.remove(layer_info.get("fid_column"))
 
-                if read_geometry is True and layer_info.get("geometry_type"):
-                    # extract the crs from the metadata
-                    crs_wkt = pyproj.CRS(meta["crs"]).to_wkt()
-                    geom_col = meta["geometry_name"] or "wkb_geometry"
+        with pyogrio.open_arrow(
+            path_or_buffer,
+            layer=layer,
+            encoding=encoding,
+            columns=with_columns,
+            return_fids=return_fids,
+            read_geometry=read_geometry,
+            force_2d=False,
+            bbox=bbox,
+            mask=mask,
+            batch_size=batch_size,
+            use_pyarrow=True,
+        ) as source:
+            meta, reader = source
 
-                while n_rows is None or n_rows > 0:
-                    for batch in reader:
-                        if n_rows is not None and n_rows <= 0:
-                            break
+            if read_geometry is True and ret_g_col_name:
+                # extract the crs from the metadata
+                crs_wkt = pyproj.CRS(meta["crs"]).to_wkt()
 
-                        if read_geometry and layer_info.get("geometry_type"):
-                            # get the geometries from the batch
-                            geometries = batch[geom_col][0:n_rows]
-                            shapely_goms = shapely.from_wkb(geometries)
-                            geometries = shapely.to_wkb(shapely_goms)
-                            # create the dataframe with the non geometry columns
-                            # then add struct column with the WKB geometries/CRS
-                            batch_df = pl.DataFrame(
-                                batch[0:n_rows].drop_columns(geom_col),
-                            ).with_columns(
-                                pl.struct(
-                                    pl.Series(
-                                        "wkb_geometry",
-                                        geometries,
-                                        dtype=pl.Binary,
-                                    ),
-                                    pl.lit(crs_wkt, dtype=pl.Categorical).alias("crs"),
-                                ).alias("geometry"),
-                            )
-                        else:
-                            batch_df = pl.DataFrame(batch[0:n_rows])
-
-                        if n_rows is not None:
-                            n_rows -= batch_df.height
-
-                        if predicate is not None:
-                            batch_df = batch_df.filter(predicate)
-
-                        yield batch_df
-                    if n_rows is None or n_rows <= 0:
+            while n_rows is None or n_rows > 0:
+                for batch in reader:
+                    if n_rows is not None and n_rows <= 0:
                         break
 
+                    batch_df = pl.DataFrame(batch[0:n_rows])
+
+                    if read_geometry and ret_g_col_name:
+                        if pyogrio_g_col_name != ret_g_col_name:
+                            batch_df = batch_df.with_columns(
+                                pl.col(pyogrio_g_col_name).spatial.from_WKB(crs_wkt).alias(ret_g_col_name),
+                            ).drop(
+                                pl.col(pyogrio_g_col_name),
+                            )
+                        else:
+                            batch_df = batch_df.with_columns(
+                                pl.col(pyogrio_g_col_name).spatial.from_WKB(crs_wkt),
+                            )
+
+                    if n_rows is not None:
+                        n_rows -= batch_df.height
+
+                    if predicate is not None:
+                        batch_df = batch_df.filter(predicate)
+
+                    yield batch_df
+                if n_rows is None or n_rows <= 0:
+                    break
     return register_io_source(io_source=source_generator, schema=schema)
 
 
@@ -474,4 +480,4 @@ def read_spatial(
         encoding=encoding,
         bbox=bbox,
         mask=mask,
-    ).collect(engine="in-memory")
+    ).collect()

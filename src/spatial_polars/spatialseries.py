@@ -86,11 +86,17 @@ class SpatialSeries:
                         shapely.GeometryCollection(list(inner))
                         for inner in shapely_chunks
                     ],
+                    flavor="iso",
+                    byte_order=1,
                 ),
             )
         else:
             s_arr = self.to_shapely_array()
-            result = shapely.to_wkb(shapely.GeometryCollection(shapely.from_wkb(s_arr)))
+            result = shapely.to_wkb(
+                shapely.GeometryCollection(shapely.from_wkb(s_arr)),
+                flavor="iso",
+                byte_order=1,
+            )
         return SpatialSeries._to_spatialseries(result, crs_wkt)
 
     def from_WKB(self, crs: Any = 4326) -> pl.Series:  #  NOQA:ANN401, N802
@@ -119,7 +125,7 @@ class SpatialSeries:
         crs_wkt = pyproj.CRS.from_user_input(crs).to_wkt()
         crs = pl.lit(crs_wkt, dtype=pl.Categorical).alias("crs")
         geoms = shapely.from_wkt(self._s.to_numpy().copy())
-        wkb_array = shapely.to_wkb(geoms)
+        wkb_array = shapely.to_wkb(geoms, flavor="iso", byte_order=1)
         ss = pl.struct(pl.Series("wkb_geometry", wkb_array), crs).alias("geometry")
         return pl.DataFrame().with_columns(ss).to_series()
 
@@ -510,7 +516,11 @@ class SpatialSeries:
         """
         s_arr = self.to_shapely_array()
         crs_wkt = self._s.spatial.get_crs()
-        result = shapely.to_wkb(shapely.difference(s_arr, other, grid_size=grid_size))
+        result = shapely.to_wkb(
+            shapely.difference(s_arr, other, grid_size=grid_size),
+            flavor="iso",
+            byte_order=1,
+        )
         return SpatialSeries._to_spatialseries(result, crs_wkt)
 
     def intersection(
@@ -531,7 +541,11 @@ class SpatialSeries:
         crs_wkt = self._s.spatial.get_crs()
         if isinstance(other, pl.Series):
             other = other.to_shapely_array()
-        result = shapely.to_wkb(shapely.intersection(s_arr, other, grid_size=grid_size))
+        result = shapely.to_wkb(
+            shapely.intersection(s_arr, other, grid_size=grid_size),
+            flavor="iso",
+            byte_order=1,
+        )
         return SpatialSeries._to_spatialseries(result, crs_wkt)
 
     def intersection_all(self) -> pl.Series:
@@ -543,7 +557,11 @@ class SpatialSeries:
         """
         s_arr = self.to_shapely_array()
         crs_wkt = self._s.spatial.get_crs()
-        result = shapely.to_wkb(shapely.intersection_all(s_arr))
+        result = shapely.to_wkb(
+            shapely.intersection_all(s_arr),
+            flavor="iso",
+            byte_order=1,
+        )
         # intersection_all returns a scalar, so wrap it in a list
         return SpatialSeries._to_spatialseries([result], crs_wkt)
 
@@ -567,6 +585,8 @@ class SpatialSeries:
             other = other.to_shapely_array()
         result = shapely.to_wkb(
             shapely.symmetric_difference(s_arr, other, grid_size=grid_size),
+            flavor="iso",
+            byte_order=1,
         )
         return SpatialSeries._to_spatialseries(result, crs_wkt)
 
@@ -588,7 +608,11 @@ class SpatialSeries:
         crs_wkt = self._s.spatial.get_crs()
         if isinstance(other, pl.Series):
             other = other.to_shapely_array()
-        result = shapely.to_wkb(shapely.union(s_arr, other, grid_size=grid_size))
+        result = shapely.to_wkb(
+            shapely.union(s_arr, other, grid_size=grid_size),
+            flavor="iso",
+            byte_order=1,
+        )
         return SpatialSeries._to_spatialseries(result, crs_wkt)
 
     def union_all(self, grid_size: float | None = None) -> pl.Series:
@@ -606,7 +630,11 @@ class SpatialSeries:
         """
         s_arr = self.to_shapely_array()
         crs_wkt = self._s.spatial.get_crs()
-        result = shapely.to_wkb(shapely.union_all(s_arr, grid_size=grid_size))
+        result = shapely.to_wkb(
+            shapely.union_all(s_arr, grid_size=grid_size),
+            flavor="iso",
+            byte_order=1,
+        )
         # union_all returns a scalar, so wrap it in a list
         return SpatialSeries._to_spatialseries([result], crs_wkt)
 
@@ -618,7 +646,11 @@ class SpatialSeries:
         """
         s_arr = self.to_shapely_array()
         crs_wkt = self._s.spatial.get_crs()
-        result = shapely.to_wkb(shapely.boundary(s_arr))
+        result = shapely.to_wkb(
+            shapely.boundary(s_arr),
+            flavor="iso",
+            byte_order=1,
+        )
         return SpatialSeries._to_spatialseries(result, crs_wkt)
 
     def buffer(
@@ -651,6 +683,8 @@ class SpatialSeries:
                 mitre_limit=mitre_limit,
                 single_sided=single_sided,
             ),
+            flavor="iso",
+            byte_order=1,
         )
         crs_wkt = self._s.spatial.get_crs()
         return SpatialSeries._to_spatialseries(result, crs_wkt)
@@ -685,6 +719,8 @@ class SpatialSeries:
                 join_style=join_style,
                 mitre_limit=mitre_limit,
             ),
+            flavor="iso",
+            byte_order=1,
         )
         return SpatialSeries._to_spatialseries(result, crs_wkt)
 
@@ -697,7 +733,11 @@ class SpatialSeries:
         """
         s_arr = self.to_shapely_array()
         crs_wkt = self._s.spatial.get_crs()
-        result = shapely.to_wkb(shapely.centroid(s_arr))
+        result = shapely.to_wkb(
+            shapely.centroid(s_arr),
+            flavor="iso",
+            byte_order=1,
+        )
         return SpatialSeries._to_spatialseries(result, crs_wkt)
 
     def clip_by_rect(
@@ -719,6 +759,8 @@ class SpatialSeries:
         crs_wkt = self._s.spatial.get_crs()
         result = shapely.to_wkb(
             shapely.clip_by_rect(s_arr, xmin=xmin, ymin=ymin, xmax=xmax, ymax=ymax),
+            flavor="iso",
+            byte_order=1,
         )
         return SpatialSeries._to_spatialseries(result, crs_wkt)
 
@@ -733,6 +775,8 @@ class SpatialSeries:
         crs_wkt = self._s.spatial.get_crs()
         result = shapely.to_wkb(
             shapely.concave_hull(s_arr, ratio=ratio, allow_holes=allow_holes),
+            flavor="iso",
+            byte_order=1,
         )
         return SpatialSeries._to_spatialseries(result, crs_wkt)
 
@@ -740,7 +784,11 @@ class SpatialSeries:
         """Compute the minimum convex geometry that encloses an input geometry."""
         s_arr = self.to_shapely_array()
         crs_wkt = self._s.spatial.get_crs()
-        result = shapely.to_wkb(shapely.convex_hull(s_arr))
+        result = shapely.to_wkb(
+            shapely.convex_hull(s_arr),
+            flavor="iso",
+            byte_order=1,
+        )
         return SpatialSeries._to_spatialseries(result, crs_wkt)
 
     def delaunay_triangles(
@@ -763,6 +811,8 @@ class SpatialSeries:
                 tolerance=tolerance,
                 only_edges=only_edges,
             ),
+            flavor="iso",
+            byte_order=1,
         )
         return SpatialSeries._to_spatialseries(result, crs_wkt)
 
@@ -778,14 +828,22 @@ class SpatialSeries:
         """
         s_arr = self.to_shapely_array()
         crs_wkt = self._s.spatial.get_crs()
-        result = shapely.to_wkb(shapely.segmentize(s_arr, max_segment_length))
+        result = shapely.to_wkb(
+            shapely.segmentize(s_arr, max_segment_length),
+            flavor="iso",
+            byte_order=1,
+        )
         return SpatialSeries._to_spatialseries(result, crs_wkt)
 
     def envelope(self) -> pl.Series:
         """Compute the minimum bounding box that encloses an input geometry."""
         s_arr = self.to_shapely_array()
         crs_wkt = self._s.spatial.get_crs()
-        result = shapely.to_wkb(shapely.envelope(s_arr))
+        result = shapely.to_wkb(
+            shapely.envelope(s_arr),
+            flavor="iso",
+            byte_order=1,
+        )
         return SpatialSeries._to_spatialseries(result, crs_wkt)
 
     def extract_unique_points(self) -> pl.Series:
@@ -796,7 +854,11 @@ class SpatialSeries:
         """
         s_arr = self.to_shapely_array()
         crs_wkt = self._s.spatial.get_crs()
-        result = shapely.to_wkb(shapely.extract_unique_points(s_arr))
+        result = shapely.to_wkb(
+            shapely.extract_unique_points(s_arr),
+            flavor="iso",
+            byte_order=1,
+        )
         return SpatialSeries._to_spatialseries(result, crs_wkt)
 
     def build_area(self) -> pl.Series:
@@ -806,7 +868,11 @@ class SpatialSeries:
         """
         s_arr = self.to_shapely_array()
         crs_wkt = self._s.spatial.get_crs()
-        result = shapely.to_wkb(shapely.build_area(s_arr))
+        result = shapely.to_wkb(
+            shapely.build_area(s_arr),
+            flavor="iso",
+            byte_order=1,
+        )
         return SpatialSeries._to_spatialseries(result, crs_wkt)
 
     def make_valid(
@@ -835,6 +901,8 @@ class SpatialSeries:
         crs_wkt = self._s.spatial.get_crs()
         result = shapely.to_wkb(
             shapely.make_valid(s_arr, method=method, keep_collapsed=keep_collapsed),
+            flavor="iso",
+            byte_order=1,
         )
         return SpatialSeries._to_spatialseries(result, crs_wkt)
 
@@ -847,7 +915,11 @@ class SpatialSeries:
         """
         s_arr = self.to_shapely_array()
         crs_wkt = self._s.spatial.get_crs()
-        result = shapely.to_wkb(shapely.normalize(s_arr))
+        result = shapely.to_wkb(
+            shapely.normalize(s_arr),
+            flavor="iso",
+            byte_order=1,
+        )
         return SpatialSeries._to_spatialseries(result, crs_wkt)
 
     def node(self) -> pl.Series:
@@ -865,14 +937,22 @@ class SpatialSeries:
         """
         s_arr = self.to_shapely_array()
         crs_wkt = self._s.spatial.get_crs()
-        result = shapely.to_wkb(shapely.node(s_arr))
+        result = shapely.to_wkb(
+            shapely.node(s_arr),
+            flavor="iso",
+            byte_order=1,
+        )
         return SpatialSeries._to_spatialseries(result, crs_wkt)
 
     def point_on_surface(self) -> pl.Series:
         """Return a point that intersects an input geometry."""
         s_arr = self.to_shapely_array()
         crs_wkt = self._s.spatial.get_crs()
-        result = shapely.to_wkb(shapely.point_on_surface(s_arr))
+        result = shapely.to_wkb(
+            shapely.point_on_surface(s_arr),
+            flavor="iso",
+            byte_order=1,
+        )
         return SpatialSeries._to_spatialseries([result], crs_wkt)
 
     def polygonize(self) -> pl.Series:
@@ -892,7 +972,11 @@ class SpatialSeries:
         """
         s_arr = self.to_shapely_array()
         crs_wkt = self._s.spatial.get_crs()
-        result = shapely.to_wkb(shapely.polygonize(s_arr))
+        result = shapely.to_wkb(
+            shapely.polygonize(s_arr),
+            flavor="iso",
+            byte_order=1,
+        )
         return SpatialSeries._to_spatialseries(result, crs_wkt)
 
     def remove_repeated_points(self, tolerance: float = 0.0) -> pl.Series:
@@ -908,6 +992,8 @@ class SpatialSeries:
         crs_wkt = self._s.spatial.get_crs()
         result = shapely.to_wkb(
             shapely.remove_repeated_points(s_arr, tolerance=tolerance),
+            flavor="iso",
+            byte_order=1,
         )
         return SpatialSeries._to_spatialseries(result, crs_wkt)
 
@@ -921,7 +1007,11 @@ class SpatialSeries:
         """
         s_arr = self.to_shapely_array()
         crs_wkt = self._s.spatial.get_crs()
-        result = shapely.to_wkb(shapely.reverse(s_arr))
+        result = shapely.to_wkb(
+            shapely.reverse(s_arr),
+            flavor="iso",
+            byte_order=1,
+        )
         return SpatialSeries._to_spatialseries(result, crs_wkt)
 
     def simplify(
@@ -942,6 +1032,8 @@ class SpatialSeries:
                 tolerance=tolerance,
                 preserve_topology=preserve_topology,
             ),
+            flavor="iso",
+            byte_order=1,
         )
         return SpatialSeries._to_spatialseries(result, crs_wkt)
 
@@ -973,6 +1065,8 @@ class SpatialSeries:
             reference = reference.to_shapely_array()
         result = shapely.to_wkb(
             shapely.snap(s_arr, reference=reference, tolerance=tolerance),
+            flavor="iso",
+            byte_order=1,
         )
         return SpatialSeries._to_spatialseries(result, crs_wkt)
 
@@ -994,7 +1088,11 @@ class SpatialSeries:
         """
         s_arr = self.to_shapely_array()
         crs_wkt = self._s.spatial.get_crs()
-        result = shapely.to_wkb(shapely.oriented_envelope(s_arr))
+        result = shapely.to_wkb(
+            shapely.oriented_envelope(s_arr),
+            flavor="iso",
+            byte_order=1,
+        )
         return SpatialSeries._to_spatialseries(result, crs_wkt)
 
     def minimum_rotated_rectangle(self) -> pl.Series:
@@ -1015,14 +1113,22 @@ class SpatialSeries:
         """
         s_arr = self.to_shapely_array()
         crs_wkt = self._s.spatial.get_crs()
-        result = shapely.to_wkb(shapely.minimum_rotated_rectangle(s_arr))
+        result = shapely.to_wkb(
+            shapely.minimum_rotated_rectangle(s_arr),
+            flavor="iso",
+            byte_order=1,
+        )
         return SpatialSeries._to_spatialseries(result, crs_wkt)
 
     def minimum_bounding_circle(self) -> pl.Series:
         """Compute the minimum bounding circle that encloses an input geometry."""
         s_arr = self.to_shapely_array()
         crs_wkt = self._s.spatial.get_crs()
-        result = shapely.to_wkb(shapely.minimum_bounding_circle(s_arr))
+        result = shapely.to_wkb(
+            shapely.minimum_bounding_circle(s_arr),
+            flavor="iso",
+            byte_order=1,
+        )
         return SpatialSeries._to_spatialseries(result, crs_wkt)
 
     # Linestring operations
@@ -1041,6 +1147,8 @@ class SpatialSeries:
                 distance=distance,
                 normalized=normalized,
             ),
+            flavor="iso",
+            byte_order=1,
         )
         return SpatialSeries._to_spatialseries(result, crs_wkt)
 
@@ -1075,7 +1183,11 @@ class SpatialSeries:
         """
         s_arr = self.to_shapely_array()
         crs_wkt = self._s.spatial.get_crs()
-        result = shapely.to_wkb(shapely.line_merge(s_arr, directed=directed))
+        result = shapely.to_wkb(
+            shapely.line_merge(s_arr, directed=directed),
+            flavor="iso",
+            byte_order=1,
+        )
         return SpatialSeries._to_spatialseries(result, crs_wkt)
 
     def shortest_line(self, other: pl.Series | shapely.Geometry) -> pl.Series:
@@ -1091,7 +1203,11 @@ class SpatialSeries:
         crs_wkt = self._s.spatial.get_crs()
         if isinstance(other, pl.Series):
             other = other.to_shapely_array()
-        result = shapely.to_wkb(shapely.shortest_line(s_arr, other))
+        result = shapely.to_wkb(
+            shapely.shortest_line(s_arr, other),
+            flavor="iso",
+            byte_order=1,
+        )
         return SpatialSeries._to_spatialseries(result, crs_wkt)
 
     # geometry properties
@@ -1099,7 +1215,11 @@ class SpatialSeries:
         """Force the dimensionality of a geometry to 2D."""
         s_arr = self.to_shapely_array()
         crs_wkt = self._s.spatial.get_crs()
-        result = shapely.to_wkb(shapely.force_2d(s_arr))
+        result = shapely.to_wkb(
+            shapely.force_2d(s_arr),
+            flavor="iso",
+            byte_order=1,
+        )
         return SpatialSeries._to_spatialseries(result, crs_wkt)
 
     def force_3d(self) -> pl.Series:
@@ -1113,7 +1233,11 @@ class SpatialSeries:
         """
         s_arr = self.to_shapely_array()
         crs_wkt = self._s.spatial.get_crs()
-        result = shapely.to_wkb(shapely.force_3d(s_arr))
+        result = shapely.to_wkb(
+            shapely.force_3d(s_arr),
+            flavor="iso",
+            byte_order=1,
+        )
         return SpatialSeries._to_spatialseries(result, crs_wkt)
 
     def get_coordinate_dimension(self) -> array:
@@ -1149,7 +1273,11 @@ class SpatialSeries:
         """Return the exterior ring of a polygon."""
         s_arr = self.to_shapely_array()
         crs_wkt = self._s.spatial.get_crs()
-        result = shapely.to_wkb(shapely.get_exterior_ring(s_arr))
+        result = shapely.to_wkb(
+            shapely.get_exterior_ring(s_arr),
+            flavor="iso",
+            byte_order=1,
+        )
         return SpatialSeries._to_spatialseries(result, crs_wkt)
 
     def get_geometry(self, index: int) -> pl.Series:
@@ -1163,7 +1291,11 @@ class SpatialSeries:
         """
         s_arr = self.to_shapely_array()
         crs_wkt = self._s.spatial.get_crs()
-        result = shapely.to_wkb(shapely.get_geometry(s_arr, index))
+        result = shapely.to_wkb(
+            shapely.get_geometry(s_arr, index),
+            flavor="iso",
+            byte_order=1,
+        )
         return SpatialSeries._to_spatialseries(result, crs_wkt)
 
     def get_interior_ring(self, index: int) -> pl.Series:
@@ -1173,7 +1305,11 @@ class SpatialSeries:
         """
         s_arr = self.to_shapely_array()
         crs_wkt = self._s.spatial.get_crs()
-        result = shapely.to_wkb(shapely.get_interior_ring(s_arr, index))
+        result = shapely.to_wkb(
+            shapely.get_interior_ring(s_arr, index),
+            flavor="iso",
+            byte_order=1,
+        )
         return SpatialSeries._to_spatialseries(result, crs_wkt)
 
     def get_num_coordinates(self) -> array:
@@ -1205,7 +1341,11 @@ class SpatialSeries:
         """Return the nth point of a linestring or linearring."""
         s_arr = self.to_shapely_array()
         crs_wkt = self._s.spatial.get_crs()
-        result = shapely.to_wkb(shapely.get_point(s_arr, index))
+        result = shapely.to_wkb(
+            shapely.get_point(s_arr, index),
+            flavor="iso",
+            byte_order=1,
+        )
         return SpatialSeries._to_spatialseries(result, crs_wkt)
 
     def get_type_id(self) -> array:

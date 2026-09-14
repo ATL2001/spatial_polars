@@ -1014,7 +1014,7 @@ class SpatialFrame:
             If True, rendered circles always face the camera. If False circles face up (i.e. are parallel with the ground plane).
 
         kwargs
-            additional kwargs to be supplied to the layer creation such as [layer extensions][lonboard.layer-extensions]
+            additional kwargs to be supplied to the layer creation such as [layer extensions](https://developmentseed.org/lonboard/latest/api/layer-extensions/)
 
         Note
         ----
@@ -1184,7 +1184,7 @@ class SpatialFrame:
             The units of the line width, one of 'meters', 'common', and 'pixels'. See unit system.
 
         kwargs
-            additional kwargs to be supplied to the layer creation such as [layer extensions][lonboard.layer-extensions]
+            additional kwargs to be supplied to the layer creation such as [layer extensions](https://developmentseed.org/lonboard/latest/api/layer-extensions/)
 
         Note
         ----
@@ -1369,7 +1369,7 @@ class SpatialFrame:
             Whether to generate a line wireframe of the polygon. The outline will have "horizontal" lines closing the top and bottom polygons and a vertical line (a "strut") for each vertex on the polygon.
 
         kwargs
-            additional kwargs to be supplied to the layer creation such as [layer extensions][lonboard.layer-extensions]
+            additional kwargs to be supplied to the layer creation such as [layer extensions](https://developmentseed.org/lonboard/latest/api/layer-extensions/)
 
         Note
         ----

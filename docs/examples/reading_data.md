@@ -252,7 +252,7 @@ shape: (4, 71) # (1)!
 1. Just the same 4 rows as the bbox example within that little mask polygon (remember, the shapefile has 108K rows and 71 columns)
 
 
-### The layer Parameter
+### The `layer` Parameter
 
 Reading from a data source which contains more than one table is accomplished with the `layer` parameter.
 
@@ -301,7 +301,7 @@ shape: (417, 35)
 
 ## read_spatial()
 
-Additionally, spatial polars also has a [read_spatial](../io.md#spatial_polars.io.read_spatial) function which will simply call `scan_spatial` and then call `.collect(engine="streaming")` to return a dataframe with all the columns and rows of a datasource.
+Additionally, spatial polars also has a [read_spatial](../io.md#spatial_polars.io.read_spatial) function which will simply call `scan_spatial` and then call `.collect()` to return a dataframe with all the columns and rows of a datasource.
 
 ```py title="read_spatial"
 read_df = read_spatial( 
