@@ -1386,6 +1386,36 @@
   
   
     <li class="md-nav__item">
+      <a href="../../blog/category/geoparquet/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    geoparquet
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    
+  
+  
+    <li class="md-nav__item">
       <a href="../../blog/category/join/" class="md-nav__link">
         
   
@@ -1514,6 +1544,36 @@
     
   
     spatial bench
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    
+  
+  
+    <li class="md-nav__item">
+      <a href="../../blog/category/wkb/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    wkb
   
 
     
@@ -1895,7 +1955,7 @@
 <ol>
 <li>Just the same 4 rows as the bbox example within that little mask polygon (remember, the shapefile has 108K rows and 71 columns)</li>
 </ol>
-<h3 id="the-layer-parameter">The layer Parameter</h3>
+<h3 id="the-layer-parameter">The <code>layer</code> Parameter</h3>
 <p>Reading from a data source which contains more than one table is accomplished with the <code>layer</code> parameter.</p>
 <p>geoda.milwaukee1 from geodatasets is a geopackage.  Geopackages are SQLite databases which can contain more than one table.</p>
 <div class="language-py highlight"><span class="filename">Using the layer parameter</span><pre><span></span><code><span id="__span-13-1"><a id="__codelineno-13-1" name="__codelineno-13-1" href="#__codelineno-13-1"></a><span class="n">layer_param_df</span> <span class="o">=</span> <span class="n">scan_spatial</span><span class="p">(</span>
@@ -1937,7 +1997,7 @@
 </span><span id="__span-14-28"><a id="__codelineno-14-28" name="__codelineno-14-28" href="#__codelineno-14-28"></a><span class="l l-Scalar l-Scalar-Plain">└─────────────┴───────────┴─────────┴────────┴───┴──────────┴──────────┴────────┴──────────────────┘</span>
 </span></code></pre></div>
 <h2 id="read_spatial">read_spatial()</h2>
-<p>Additionally, spatial polars also has a <a href="../../io/#spatial_polars.io.read_spatial">read_spatial</a> function which will simply call <code>scan_spatial</code> and then call <code>.collect(engine="streaming")</code> to return a dataframe with all the columns and rows of a datasource.</p>
+<p>Additionally, spatial polars also has a <a href="../../io/#spatial_polars.io.read_spatial">read_spatial</a> function which will simply call <code>scan_spatial</code> and then call <code>.collect()</code> to return a dataframe with all the columns and rows of a datasource.</p>
 <div class="language-py highlight"><span class="filename">read_spatial</span><pre><span></span><code><span id="__span-15-1"><a id="__codelineno-15-1" name="__codelineno-15-1" href="#__codelineno-15-1"></a><span class="n">read_df</span> <span class="o">=</span> <span class="n">read_spatial</span><span class="p">(</span> 
 </span><span id="__span-15-2"><a id="__codelineno-15-2" name="__codelineno-15-2" href="#__codelineno-15-2"></a>    <span class="n">geodatasets</span><span class="o">.</span><span class="n">get_path</span><span class="p">(</span><span class="s2">&quot;geoda.milwaukee1&quot;</span><span class="p">),</span> 
 </span><span id="__span-15-3"><a id="__codelineno-15-3" name="__codelineno-15-3" href="#__codelineno-15-3"></a>    <span class="n">layer</span><span class="o">=</span><span class="s2">&quot;wi_final_census2_random4&quot;</span>

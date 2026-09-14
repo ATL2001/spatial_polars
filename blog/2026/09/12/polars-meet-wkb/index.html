@@ -8,31 +8,31 @@
       
       
       
-        <link rel="canonical" href="https://github.com/ATL2001/spatial-polars/examples/visualization/viz/">
+        <link rel="canonical" href="https://github.com/ATL2001/spatial-polars/blog/2026/09/12/polars-meet-wkb/">
       
       
-        <link rel="prev" href="../../expressions/spatial_filter/">
+        <link rel="prev" href="../../../06/04/lazy-spatial-joins/">
       
       
-        <link rel="next" href="../scatterplotlayer/">
+        <link rel="next" href="../../13/v041-updates/">
       
       
         
       
       
-      <link rel="icon" href="../../../assets/images/favicon.png">
+      <link rel="icon" href="../../../../../assets/images/favicon.png">
       <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.6">
     
     
       
-        <title>Vis - Spatial Polars</title>
+        <title>Polars, Meet WKB - Spatial Polars</title>
       
     
     
-      <link rel="stylesheet" href="../../../assets/stylesheets/main.484c7ddc.min.css">
+      <link rel="stylesheet" href="../../../../../assets/stylesheets/main.484c7ddc.min.css">
       
         
-        <link rel="stylesheet" href="../../../assets/stylesheets/palette.ab4e12ef.min.css">
+        <link rel="stylesheet" href="../../../../../assets/stylesheets/palette.ab4e12ef.min.css">
       
       
 
@@ -51,13 +51,13 @@
       
     
     
-      <link rel="stylesheet" href="../../../assets/_markdown_exec_pyodide.css">
+      <link rel="stylesheet" href="../../../../../assets/_markdown_exec_pyodide.css">
     
-      <link rel="stylesheet" href="../../../assets/_markdown_exec_ansi.css">
+      <link rel="stylesheet" href="../../../../../assets/_markdown_exec_ansi.css">
     
-      <link rel="stylesheet" href="../../../assets/_mkdocstrings.css">
+      <link rel="stylesheet" href="../../../../../assets/_mkdocstrings.css">
     
-    <script>__md_scope=new URL("../../..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    <script>__md_scope=new URL("../../../../..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
     
       
 
@@ -82,7 +82,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#vis" class="md-skip">
+        <a href="#an-idea-enters" class="md-skip">
           Skip to content
         </a>
       
@@ -98,7 +98,7 @@
 
 <header class="md-header md-header--shadow" data-md-component="header">
   <nav class="md-header__inner md-grid" aria-label="Header">
-    <a href="../../.." title="Spatial Polars" class="md-header__button md-logo" aria-label="Spatial Polars" data-md-component="logo">
+    <a href="../../../../.." title="Spatial Polars" class="md-header__button md-logo" aria-label="Spatial Polars" data-md-component="logo">
       
   
   <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M351.9 280H161c2.9 64.5 17.2 123.9 37.5 167.4 11.4 24.5 23.7 41.8 35.1 52.4 11.2 10.5 18.9 12.2 22.9 12.2s11.7-1.7 22.9-12.2c11.4-10.6 23.7-28 35.1-52.4 20.3-43.5 34.6-102.9 37.5-167.4zm-191-48h190.9c-2.8-64.5-17.1-123.9-37.4-167.4-11.4-24.4-23.7-41.8-35.1-52.4C268.1 1.7 260.4 0 256.4 0s-11.7 1.7-22.9 12.2c-11.4 10.6-23.7 28-35.1 52.4-20.3 43.5-34.6 102.9-37.5 167.4m-48 0c3.5-85.6 25.6-165.1 57.9-217.3C78.7 47.3 10.9 131.2 1.5 232zM1.5 280c9.4 100.8 77.2 184.7 169.3 217.3-32.3-52.2-54.4-131.7-57.9-217.3zm398.4 0c-3.5 85.6-25.6 165.1-57.9 217.3 92.1-32.7 159.9-116.5 169.3-217.3zm111.4-48C501.9 131.2 434.1 47.3 342 14.7c32.3 52.2 54.4 131.7 57.9 217.3z"/></svg>
@@ -118,7 +118,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              Vis
+              Polars, Meet WKB
             
           </span>
         </div>
@@ -225,7 +225,9 @@
           
             
               
-              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" hidden>
                 <div class="md-sidebar__scrollwrap">
                   <div class="md-sidebar__inner">
                     
@@ -234,7 +236,7 @@
 
 <nav class="md-nav md-nav--primary" aria-label="Navigation" data-md-level="0">
   <label class="md-nav__title" for="__drawer">
-    <a href="../../.." title="Spatial Polars" class="md-nav__button md-logo" aria-label="Spatial Polars" data-md-component="logo">
+    <a href="../../../../.." title="Spatial Polars" class="md-nav__button md-logo" aria-label="Spatial Polars" data-md-component="logo">
       
   
   <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M351.9 280H161c2.9 64.5 17.2 123.9 37.5 167.4 11.4 24.5 23.7 41.8 35.1 52.4 11.2 10.5 18.9 12.2 22.9 12.2s11.7-1.7 22.9-12.2c11.4-10.6 23.7-28 35.1-52.4 20.3-43.5 34.6-102.9 37.5-167.4zm-191-48h190.9c-2.8-64.5-17.1-123.9-37.4-167.4-11.4-24.4-23.7-41.8-35.1-52.4C268.1 1.7 260.4 0 256.4 0s-11.7 1.7-22.9 12.2c-11.4 10.6-23.7 28-35.1 52.4-20.3 43.5-34.6 102.9-37.5 167.4m-48 0c3.5-85.6 25.6-165.1 57.9-217.3C78.7 47.3 10.9 131.2 1.5 232zM1.5 280c9.4 100.8 77.2 184.7 169.3 217.3-32.3-52.2-54.4-131.7-57.9-217.3zm398.4 0c-3.5 85.6-25.6 165.1-57.9 217.3 92.1-32.7 159.9-116.5 169.3-217.3zm111.4-48C501.9 131.2 434.1 47.3 342 14.7c32.3 52.2 54.4 131.7 57.9 217.3z"/></svg>
@@ -264,7 +266,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../.." class="md-nav__link">
+      <a href="../../../../.." class="md-nav__link">
         
   
   
@@ -288,20 +290,18 @@
       
   
   
-    
   
   
-  
     
     
     
     
     
-    <li class="md-nav__item md-nav__item--active md-nav__item--nested">
+    <li class="md-nav__item md-nav__item--nested">
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2" checked>
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2" >
         
           
           <label class="md-nav__link" for="__nav_2" id="__nav_2_label" tabindex="0">
@@ -322,7 +322,7 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_2_label" aria-expanded="true">
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_2_label" aria-expanded="false">
           <label class="md-nav__title" for="__nav_2">
             <span class="md-nav__icon md-icon"></span>
             
@@ -340,7 +340,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../reading_data/" class="md-nav__link">
+      <a href="../../../../../examples/reading_data/" class="md-nav__link">
         
   
   
@@ -368,7 +368,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../starting_from_a_polars_df/" class="md-nav__link">
+      <a href="../../../../../examples/starting_from_a_polars_df/" class="md-nav__link">
         
   
   
@@ -396,7 +396,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../writing_data/" class="md-nav__link">
+      <a href="../../../../../examples/writing_data/" class="md-nav__link">
         
   
   
@@ -424,7 +424,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../spatial_join/" class="md-nav__link">
+      <a href="../../../../../examples/spatial_join/" class="md-nav__link">
         
   
   
@@ -452,7 +452,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../reprojection/" class="md-nav__link">
+      <a href="../../../../../examples/reprojection/" class="md-nav__link">
         
   
   
@@ -527,7 +527,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../expressions/single_geometry_column_input_expressions/" class="md-nav__link">
+      <a href="../../../../../examples/expressions/single_geometry_column_input_expressions/" class="md-nav__link">
         
   
   
@@ -555,7 +555,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../expressions/geometry_column_and_scalar_geometry_input_expressions/" class="md-nav__link">
+      <a href="../../../../../examples/expressions/geometry_column_and_scalar_geometry_input_expressions/" class="md-nav__link">
         
   
   
@@ -583,7 +583,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../expressions/two_geometry_column_input_expressions/" class="md-nav__link">
+      <a href="../../../../../examples/expressions/two_geometry_column_input_expressions/" class="md-nav__link">
         
   
   
@@ -611,7 +611,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../expressions/group_by_context_expressions/" class="md-nav__link">
+      <a href="../../../../../examples/expressions/group_by_context_expressions/" class="md-nav__link">
         
   
   
@@ -639,7 +639,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../expressions/spatial_filter/" class="md-nav__link">
+      <a href="../../../../../examples/expressions/spatial_filter/" class="md-nav__link">
         
   
   
@@ -672,20 +672,18 @@
                 
   
   
-    
   
   
-  
     
     
     
     
     
-    <li class="md-nav__item md-nav__item--active md-nav__item--nested">
+    <li class="md-nav__item md-nav__item--nested">
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2_7" checked>
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2_7" >
         
           
           <label class="md-nav__link" for="__nav_2_7" id="__nav_2_7_label" tabindex="0">
@@ -706,7 +704,7 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_2_7_label" aria-expanded="true">
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_2_7_label" aria-expanded="false">
           <label class="md-nav__title" for="__nav_2_7">
             <span class="md-nav__icon md-icon"></span>
             
@@ -721,19 +719,10 @@
                 
   
   
-    
   
   
-  
-    <li class="md-nav__item md-nav__item--active">
-      
-      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
-      
-      
-        
-      
-      
-      <a href="./" class="md-nav__link md-nav__link--active">
+    <li class="md-nav__item">
+      <a href="../../../../../examples/visualization/viz/" class="md-nav__link">
         
   
   
@@ -749,7 +738,6 @@
   
 
       </a>
-      
     </li>
   
 
@@ -762,7 +750,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../scatterplotlayer/" class="md-nav__link">
+      <a href="../../../../../examples/visualization/scatterplotlayer/" class="md-nav__link">
         
   
   
@@ -790,7 +778,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../pathlayer/" class="md-nav__link">
+      <a href="../../../../../examples/visualization/pathlayer/" class="md-nav__link">
         
   
   
@@ -818,7 +806,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../polygonlayer/" class="md-nav__link">
+      <a href="../../../../../examples/visualization/polygonlayer/" class="md-nav__link">
         
   
   
@@ -908,7 +896,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../io/" class="md-nav__link">
+      <a href="../../../../../io/" class="md-nav__link">
         
   
   
@@ -936,7 +924,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../SpatialFrame/" class="md-nav__link">
+      <a href="../../../../../SpatialFrame/" class="md-nav__link">
         
   
   
@@ -964,7 +952,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../SpatialLazyFrame/" class="md-nav__link">
+      <a href="../../../../../SpatialLazyFrame/" class="md-nav__link">
         
   
   
@@ -992,7 +980,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../SpatialExpr/" class="md-nav__link">
+      <a href="../../../../../SpatialExpr/" class="md-nav__link">
         
   
   
@@ -1024,18 +1012,20 @@
       
   
   
+    
   
   
+  
     
     
     
     
     
-    <li class="md-nav__item md-nav__item--nested">
+    <li class="md-nav__item md-nav__item--active md-nav__item--nested">
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4" >
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4" checked>
         
           
           <label class="md-nav__link" for="__nav_4" id="__nav_4_label" tabindex="0">
@@ -1056,7 +1046,7 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="false">
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="true">
           <label class="md-nav__title" for="__nav_4">
             <span class="md-nav__icon md-icon"></span>
             
@@ -1071,12 +1061,14 @@
                 
   
   
+    
+  
   
     
   
   
-    <li class="md-nav__item">
-      <a href="../../../blog/" class="md-nav__link">
+    <li class="md-nav__item md-nav__item--active">
+      <a href="../../../../" class="md-nav__link">
         
   
   
@@ -1153,7 +1145,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../blog/archive/2026/" class="md-nav__link">
+      <a href="../../../../archive/2026/" class="md-nav__link">
         
   
   
@@ -1183,7 +1175,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../blog/archive/2025/" class="md-nav__link">
+      <a href="../../../../archive/2025/" class="md-nav__link">
         
   
   
@@ -1268,7 +1260,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../blog/category/geoparquet/" class="md-nav__link">
+      <a href="../../../../category/geoparquet/" class="md-nav__link">
         
   
   
@@ -1298,7 +1290,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../blog/category/join/" class="md-nav__link">
+      <a href="../../../../category/join/" class="md-nav__link">
         
   
   
@@ -1328,7 +1320,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../blog/category/lonboard/" class="md-nav__link">
+      <a href="../../../../category/lonboard/" class="md-nav__link">
         
   
   
@@ -1358,7 +1350,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../blog/category/pyogrio/" class="md-nav__link">
+      <a href="../../../../category/pyogrio/" class="md-nav__link">
         
   
   
@@ -1388,7 +1380,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../blog/category/shapely/" class="md-nav__link">
+      <a href="../../../../category/shapely/" class="md-nav__link">
         
   
   
@@ -1418,7 +1410,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../blog/category/spatial-bench/" class="md-nav__link">
+      <a href="../../../../category/spatial-bench/" class="md-nav__link">
         
   
   
@@ -1448,7 +1440,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../blog/category/wkb/" class="md-nav__link">
+      <a href="../../../../category/wkb/" class="md-nav__link">
         
   
   
@@ -1492,6 +1484,8 @@
             
             
               
+                
+              
               <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
                 <div class="md-sidebar__scrollwrap">
                   <div class="md-sidebar__inner">
@@ -1501,8 +1495,80 @@
   
   
   
-    
   
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#an-idea-enters" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        An Idea Enters
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#lets-do-it" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Let's Do it!
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#make-it-robust" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Make it Robust
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#where-to-now" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Where to Now?
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#computative-results" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Computative Results
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#follow-on" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Follow On
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
   
 </nav>
                   </div>
@@ -1511,59 +1577,137 @@
             
           
           
-            <div class="md-content" data-md-component="content">
-              
-              <article class="md-content__inner md-typeset">
-                
-                  
-
-
-  
-  
-
-
-<h1 id="vis">Vis</h1>
-<p>In this notebook we will demonstrate using spatial polars to visualize spatial data on a <a href="https://developmentseed.org/lonboard/latest/">Lonboard</a> map using Lonboard's .vis function.</p>
-<div class="admonition note">
-<p class="admonition-title">Note</p>
-<p>This example makes use the <a href="https://geodatasets.readthedocs.io/en/latest/introduction.html">geodatasets</a> python package to access some spatial data easily.</p>
-<p>Calling <code>geodatasets.get_path()</code> will download data the specified data to the machine and return the path to the downloaded file.  If the file has already been downloaded it will simply return the path to the file. 
-<a href="https://geodatasets.readthedocs.io/en/latest/introduction.html#downloading-and-caching">See downloading and caching</a> for further details.</p>
-</div>
-<p>Sometimes you just want to see stuff on a map to check out what the data looks like, you dont really care about the colors or any specifics, just show me something.  Lonboard's <a href="https://developmentseed.org/lonboard/latest/api/viz/">viz</a> has you covered.  All we have to do is call  <a href="../../../SpatialFrame/#spatial_polars.spatialframe.SpatialFrame.viz">.spatial.viz()</a> and it will take the data in our dataframe and add it to a map, no need to fiddle with making a map and a layer and adding the layer to the map, super easy!  If you have specific parameters to set for the layer or map, they can be provided as dictionaries to the *_kwargs parameters for the layer type or the map.</p>
-<p>In the example below we'll read the geoda.milwaukee1 dataset into a dataframe and the call <code>.spatial.viz()</code> from the dataframe, and it will give us a map showing some polygons around the Milwaukee area.  Big shout out to all my people over in Mukwonago (it's where ya wanna go!)</p>
-<div class="language-py highlight"><span class="filename">using .viz</span><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="kn">import</span><span class="w"> </span><span class="nn">geodatasets</span>
-</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>
-</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="kn">from</span><span class="w"> </span><span class="nn">spatial_polars</span><span class="w"> </span><span class="kn">import</span> <span class="n">read_spatial</span>
-</span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>
-</span><span id="__span-0-5"><a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a><span class="n">geoda_milwaukee1_df</span> <span class="o">=</span> <span class="n">read_spatial</span><span class="p">(</span><span class="n">geodatasets</span><span class="o">.</span><span class="n">get_path</span><span class="p">(</span><span class="s2">&quot;geoda.milwaukee1&quot;</span><span class="p">))</span>  <span class="c1"># (1)!</span>
-</span><span id="__span-0-6"><a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a><span class="hll"><span class="n">milwaukee_map</span> <span class="o">=</span> <span class="n">geoda_milwaukee1_df</span><span class="o">.</span><span class="n">spatial</span><span class="o">.</span><span class="n">viz</span><span class="p">()</span>  <span class="c1"># (2)!</span>
-</span></span><span id="__span-0-7"><a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a>
-</span><span id="__span-0-8"><a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a><span class="n">milwaukee_map</span>
-</span></code></pre></div>
-<ol>
-<li>Read the geoda.milwaukee1 geodataset into a dataframe</li>
-<li>Create a map from the dataframe using viz with no kwargs</li>
-</ol>
-<div class="map">
-  <iframe src="../viz.html" width="800" height="388"></iframe>
-</div>
-
-
-
-
-
-
-
-
-
-
-
-
-                
-              </article>
+  <div class="md-content md-content--post" data-md-component="content">
+    <div class="md-sidebar md-sidebar--post" data-md-component="sidebar" data-md-type="navigation">
+      <div class="md-sidebar__scrollwrap">
+        <div class="md-sidebar__inner md-post">
+          <nav class="md-nav md-nav--primary">
+            <div class="md-post__back">
+              <div class="md-nav__title md-nav__container">
+                <a href="../../../../" class="md-nav__link">
+                  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+                  <span class="md-ellipsis">
+                    Back to index
+                  </span>
+                </a>
+              </div>
             </div>
+            
+            <ul class="md-post__meta md-nav__list">
+              <li class="md-nav__item md-nav__item--section">
+                <div class="md-post__title">
+                  <span class="md-ellipsis">
+                    Metadata
+                  </span>
+                </div>
+                <nav class="md-nav">
+                  <ul class="md-nav__list">
+                    <li class="md-nav__item">
+                      <div class="md-nav__link">
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 19H5V8h14m-3-7v2H8V1H6v2H5c-1.11 0-2 .89-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V5a2 2 0 0 0-2-2h-1V1m-1 11h-5v5h5z"/></svg>
+                        <time datetime="2026-09-12 00:00:00+00:00" class="md-ellipsis">September 12, 2026</time>
+                      </div>
+                    </li>
+                    
+                    
+                      <li class="md-nav__item">
+                        <div class="md-nav__link">
+                          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9 3v15h3V3zm3 2 4 13 3-1-4-13zM5 5v13h3V5zM3 19v2h18v-2z"/></svg>
+                          <span class="md-ellipsis">
+                            in
+                            
+                              <a href="../../../../category/wkb/">wkb</a></span>
+                        </div>
+                      </li>
+                    
+                    
+                      
+                      <li class="md-nav__item">
+                        <div class="md-nav__link">
+                          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 20a8 8 0 0 0 8-8 8 8 0 0 0-8-8 8 8 0 0 0-8 8 8 8 0 0 0 8 8m0-18a10 10 0 0 1 10 10 10 10 0 0 1-10 10C6.47 22 2 17.5 2 12A10 10 0 0 1 12 2m.5 5v5.25l4.5 2.67-.75 1.23L11 13V7z"/></svg>
+                          <span class="md-ellipsis">
+                            
+                              6 min read
+                            
+                          </span>
+                        </div>
+                      </li>
+                    
+                  </ul>
+                </nav>
+              </li>
+            </ul>
+            
+          </nav>
           
+        </div>
+      </div>
+    </div>
+    <article class="md-content__inner md-typeset">
+      
+        
+  
+
+
+
+  
+  
+
+
+  <h1>Polars, Meet WKB</h1>
+
+<p>Prior to V0.4.0 spatial polars treated WKB in the geometry structs as a black box.  For all spatial expressions, the WKB was shipped over to shapely, converted to a shapely geometry object, then whatever operation you requested was performed on the shapely goemetry object, then the results were passed back to polars.  It was simple, and shapely's numpy ufuncs certainly aren't what I consider slow, it was all good!  Then <a href="https://duckdb.org/docs/lts/core_extensions/spatial/overview">DuckDB</a> and <a href="https://sedona.apache.org/sedonadb/latest/">SedonaDB</a> came in with their blazing speeds, and made me once again reconsider my concept of slow <img alt="🐢" class="twemoji" src="https://cdn.jsdelivr.net/gh/jdecked/twemoji@16.0.1/assets/svg/1f422.svg" title=":turtle:" />.</p>
+<h2 id="an-idea-enters">An Idea Enters <img alt="💡" class="twemoji" src="https://cdn.jsdelivr.net/gh/jdecked/twemoji@16.0.1/assets/svg/1f4a1.svg" title=":bulb:" /></h2>
+<p class="annotate">A few weeks ago, I stumbled on the <a href="https://docs.pola.rs/api/python/stable/reference/expressions/binary.html">binary expressions</a> documentation offered by polars.  I'm sure I've seen that page before, but for some reason when I was there, it clicked!  A lot of spatial operations(1) are relatively simple math problems.  Example: to know the distance between two points(2), we just need to use the pythagorean theorem, which is trivial to implement using polars expressions.  I had a hunch that if we were to use polars expressions to parse the binary to extract the X/Y coordinates of the points and then supply those coords to polars expressions to compute the distance, we could get the same answer as before, but hopefully quicker, because we wouldn't need to create an entire shapely geometry object just to do some simple math.<br /></p>
+<ol>
+<li>Especially ones involving points</li>
+<li>In cartesian space (which is what shapely does)</li>
+</ol>
+<h2 id="lets-do-it">Let's Do it!</h2>
+<p class="annotate">Armed with the idea, I set forth to see what I could do.  I took a dataframe with a bunch of points, and wrote a bare bones expression to parse the X coordinate from the WKB. It worked super fast, read <strong>WAY</strong> faster than sending the WKB to shapely and asking shapely to give me the X coordinate. I quickly spun up another expression to return the Y coordinate and then another to compute the pythagorean theorem to determine the distance to an arbitrary other point, and finally if the distance was less than an input distance to emulate the <a href="https://shapely.readthedocs.io/en/latest/reference/shapely.dwithin.html">dwithin function of shapely</a>.  Once again it was overwhelmingly faster than the shapely based function, I was extatic <img alt="😳" class="twemoji" src="https://cdn.jsdelivr.net/gh/jdecked/twemoji@16.0.1/assets/svg/1f633.svg" title=":flushed:" />!  Excitement aside, I knew what I was prototyping with was only dealing with little endian ISO WKB.  The expression I ultimately wanted needed to be taking into account WKB with big endian byte order, little endian extended WKB, and big endian extended WKB(1), and would still need a fallback (at least for now) to shapely for non-point geometry types.  Although I knew I needed to write a lot more code, I figured with the parallel nature of polars it would be a bit slower to take into account all those possibilities, but was hopeful that it would still net a large perfomance gain.</p>
+<ol>
+<li>At the time I wasn't even thinking about extended WKB with an embedded SRID... which would further complicate matters... more on that later :-/ </li>
+</ol>
+<h2 id="make-it-robust">Make it Robust</h2>
+<p class="annotate">I began chaining out a big <a href="https://docs.pola.rs/api/python/stable/reference/expressions/api/polars.when.html#polars.when">pl.when().then().otherwise() expression</a> to handle the different byte orders and WKB flavors.  I set up an expression to parse the binary to determine which geometry types were in the series, if they were little endian points, I supplied the WKB to my dwithin expression for little endian points, big endian points went to another expression, otherwise use shapely to compute the distance.  Long story short, that didn't pan out.  There's a big ole warning in the <code>polars.when</code> docs that clearly states that all the expressions would be evaluated in parallel(1), so even though the data I was experimenting with was all points, I after adding all the different <code>.when().then()</code> chains and having the fallback to use shapely, it was still doing all the computations including the fallback to shapely even though it wasnt going to use that result since I had the little endian point operation first in my chain... It was slower than just using shapely.  I was sad, but I didnt give up!</p>
+<ol>
+<li>I didn't honestly pay attention to the big warning note there... I'm the problem, it's me.</li>
+</ol>
+<h2 id="where-to-now">Where to Now?</h2>
+<p class="annotate">I deicded to use a different expression first to split the big/little endiain point WKB data into different fields of struct, and then the non-points to a third field of a struct, so each row would have one of the three fields populated leaving the other two fields null. I passed the field of little endian WKB to one expression, the big endian to another, and the non-point geometry types field would go to shapely for the computation, then coalescing the results for each field in the struct.  In my experimentation with only points, since the data being passed to shapely was all None, shapely returned None back as a result super fast(1), and the little/big endian expressions were being run quickly, so overall I was getting much better performance(2) without touching the public API(3).<br /></p>
+<ol>
+<li>I'm guessing it's got some sort of no-op shortcut when you give it a None to work from, it was almost instant on 6M points</li>
+<li>Not as fast as just having only one expression which only worked for the little endian points, but still loads faster than the shapely method</li>
+<li>I didnt want to make some sort of "only_points_dwithin" function or something like that, that feels complicated and confusing to me</li>
+</ol>
+<h2 id="computative-results">Computative Results</h2>
+<p>I pushed the updates up to github/pypi as V0.4.0, and asked the crew over at spatial bench if they'd be willing to kick off the github action to run that benchmark suite so I could see the results there.  Previously Q1 of the spatial bench benchmark, which uses the dwithin function, was taking spatial polars in the <a href="https://github.com/apache/sedona-spatialbench/actions/runs/34016195606">3.8-3.9s range</a>. Now running spatial polars v0.4.0 the exact same query, producing the same results only <a href="https://github.com/apache/sedona-spatialbench/actions/runs/34282584252">took 0.82s</a> <img alt="🚀" class="twemoji" src="https://cdn.jsdelivr.net/gh/jdecked/twemoji@16.0.1/assets/svg/1f680.svg" title=":rocket:" />  that's still a fair bit slower than DuckDB or SedonaDB, but it's not totally getting left in the dust anymore!</p>
+<h2 id="follow-on">Follow On</h2>
+<p class="annotate">Overall I'm pretty jazzed <img alt="🎺" class="twemoji" src="https://cdn.jsdelivr.net/gh/jdecked/twemoji@16.0.1/assets/svg/1f3ba.svg" title=":trumpet:" /> about the results, and think I'll mess around with adding some more polars binary based expressions in the future. The more I was thought about it though, dealing with the different byte order and WKB flavors seems like a lot of overhead.  Not to mention I also woke up out of nowhere one night this week realizing that I hadn't accounted for embedded SRIDs, so results coming from extended WKB with an embedded SRID are wrong(1).  In version 0.4.1 I've decided to take all WKB input to the geometry series, and if it's <strong>not</strong> already little endian ISO, it will be converted to it, which resolves that SRID bug <img alt="🐛" class="twemoji" src="https://cdn.jsdelivr.net/gh/jdecked/twemoji@16.0.1/assets/svg/1f41b.svg" title=":bug:" />.  This will also ease the maintenance burden of all the different varieties of WKB, and shorten the when.then.otherwise chains, so theoretically we should get some more performance, provided the input data is already little endian ISO.</p>
+<ol>
+<li>I'm being <img alt="💯" class="twemoji" src="https://cdn.jsdelivr.net/gh/jdecked/twemoji@16.0.1/assets/svg/1f4af.svg" title=":100:" /> serious... who thinks of this stuff in their sleep??? ... me I guess... <img alt="🤷" class="twemoji" src="https://cdn.jsdelivr.net/gh/jdecked/twemoji@16.0.1/assets/svg/1f937.svg" title=":shrug:" /></li>
+</ol>
+
+
+
+
+
+
+
+  
+  
+
+
+
+
+  
+
+
+
+      
+    </article>
+  </div>
+
           
 <script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
         </div>
@@ -1597,12 +1741,12 @@
     
       
       
-      <script id="__config" type="application/json">{"annotate": null, "base": "../../..", "features": ["content.code.annotate", "content.code.copy", "content.code.select"], "search": "../../../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+      <script id="__config" type="application/json">{"annotate": null, "base": "../../../../..", "features": ["content.code.annotate", "content.code.copy", "content.code.select"], "search": "../../../../../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
     
     
-      <script src="../../../assets/javascripts/bundle.79ae519e.min.js"></script>
+      <script src="../../../../../assets/javascripts/bundle.79ae519e.min.js"></script>
       
-        <script src="../../../assets/_markdown_exec_pyodide.js"></script>
+        <script src="../../../../../assets/_markdown_exec_pyodide.js"></script>
       
     
   </body>
