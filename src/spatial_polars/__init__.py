@@ -1,6 +1,6 @@
 """Spatial Polars."""
 
-from .io import read_spatial, scan_spatial, spatial_series_dtype
+from .io import read_geoparquet, read_spatial, scan_geoparquet, scan_spatial, spatial_series_dtype
 from .spatialexpr import SpatialExpr
 from .spatialframe import SpatialFrame
 from .spatiallazyframe import SpatialLazyFrame
@@ -11,7 +11,9 @@ __all__ = [
     "SpatialFrame",
     "SpatialLazyFrame",
     "SpatialSeries",
+    "read_geoparquet",
     "read_spatial",
+    "scan_geoparquet",
     "scan_spatial",
     "spatial_series_dtype",
 ]
