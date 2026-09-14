@@ -26,16 +26,17 @@ pip install spatial-polars[lonboard, examples, knn]
 ```
 
 ## Lazily access geospatial data
-Spatial polars [scan_spatial](io.md#spatial_polars.io.scan_spatial) function will scan geoparquet files and any other data source [supported by pyogrio](https://pyogrio.readthedocs.io/en/latest/supported_formats.html) and return a [polars LazyFrame](https://docs.pola.rs/api/python/stable/reference/lazyframe/index.html#). A [read_spatial](io.md#spatial_polars.io.read_spatial) function is also provided which simply wraps scan_spatial with a [.collect(streaming=True)][polars.LazyFrame.collect] at the end to return a polars dataframe. The scan_spatial function was the reason this package was created, it is much preferred over the read_spatial function for [the same reasons that polars recommends](https://docs.pola.rs/user-guide/concepts/lazy-api/) using the lazy API over the eager API.
+Spatial polars [scan_spatial](io.md#spatial_polars.io.scan_spatial) function will scan any other data source [supported by pyogrio](https://pyogrio.readthedocs.io/en/latest/supported_formats.html) and return a [polars LazyFrame](https://docs.pola.rs/api/python/stable/reference/lazyframe/index.html#). A [read_spatial](io.md#spatial_polars.io.read_spatial) function is also provided which simply wraps scan_spatial with a [.collect()][polars.LazyFrame.collect] at the end to return a polars dataframe. The scan_spatial function was the reason this package was created, it is much preferred over the read_spatial function for [the same reasons that polars recommends](https://docs.pola.rs/user-guide/concepts/lazy-api/) using the lazy API over the eager API.  Also included is a [scan_geoparquet](io.md#spatial_polars.io.scan_geoparquet) function which scans geoparquet files and converts geometry columns in the geoparquet to the spatial polars geometry struct. A [read_geoparquet](io.md#spatial_polars.io.read_geoparquet) function scans then immediately collects the data from a geoparquet file and into a dataframe.
 
 ## Geometry column
-When spatial polars reads data from a spatial data source, the geometries are stored in a [polars struct](https://docs.pola.rs/user-guide/expressions/structs/) named "geometry" with two fields.  
+When spatial polars reads data from a spatial data source, the geometries are stored in a [polars struct](https://docs.pola.rs/user-guide/expressions/structs/) with two fields named the same as the data source's gometry field.
 <div class="annotate" markdown>
-  * **wkb_geometry** field: A polars binary series for the geometry of each feature as [WKB](https://libgeos.org/specifications/wkb/) 
-  * **crs** field: A polars categorical series for the [coordinate reference system as WKT](https://en.wikipedia.org/wiki/Well-known_text_representation_of_coordinate_reference_systems) (1)
+  * **wkb_geometry** field: A polars binary series for the geometry of each feature as [WKB](https://libgeos.org/specifications/wkb/) which is always stored as little endian [ISO WKB](https://libgeos.org/specifications/wkb/#iso-wkb) (1)
+  * **crs** field: A polars categorical series for the [coordinate reference system as WKT](https://en.wikipedia.org/wiki/Well-known_text_representation_of_coordinate_reference_systems) (2)
 </div>
-  
-1. Using a categorical makes the series' RAM consumption very small.
+
+1. Storing the WKB as little endian ISO WKB allows us to easily parse the binary data and use polars expressions to do some of the computations on the spatial data.
+2. Using a categorical makes the series' RAM consumption very small.
 
 
 Storing the geometries in this manner has an advantage over using a polars binary field holding [EWKB](https://libgeos.org/specifications/wkb/#extended-wkb), because this allows spatial polars to work with custom projections which do not have a SRID, without a need to store custom SRID codes/CRS definition elsewhere.
@@ -47,7 +48,7 @@ Storing the geometries in this manner has an advantage over using a polars binar
     Spatial polars allows you to intermix geometry types (eg. points and lines) in the same geometry column.  Attempting to write a dataframe with a geometry column that has mixed geometry types may produce an error if the format is not capable of handling more than one geometry type.
 
 ## Spatial Expressions
-Many expressions are included which work with the geometry struct.  The expressions all work in a similar manner
+Many expressions are included which work with the geometry struct.  Most expressions all work in a similar manner
 
   1. Converts the polars series to a numpy array of WKB
   2. Converts the array of WKB to shapely geometry objects
@@ -55,6 +56,8 @@ Many expressions are included which work with the geometry struct.  The expressi
   4. Depending on the result of the shapely function:
     * Result is an array of geometries: the result will be converted back to WKB and stored in a struct with the same CRS as the input.  
     * Result is **not** an array of geometries: the result will be an appropriately typed polars series.
+
+As of version 0.4.0 some of the expressions which previously relied on shapely have been replaced with native [polars binary expressions](https://docs.pola.rs/api/python/stable/reference/expressions/binary.html) that operate directly on the WKB from the geometry struct.  For operations such as getting the X coordinate from a point, creating shapely geometry objects from the WKB, getting the X coordinates of the points, and then sending that back to polars took substantially more time than it does for polars to look at the appropriate bits in the WKB, and convert that to a floating point number.
 
 Spatial polars expressions can be accesssed in two ways:  
 
