@@ -82,28 +82,28 @@ def _separate_points_and_other(expr: pl.Expr) -> pl.Expr:
     )
 
 
-def _le_point_wkb_to_x(expr: pl.Expr) -> pl.Expr:
-    """Get x value from little endian point."""
+def _point_wkb_to_x(expr: pl.Expr) -> pl.Expr:
+    """Get x value from little endian ISO point wkb."""
     return expr.bin.slice(5, 8).bin.reinterpret(dtype=pl.Float64)
 
 
-def _le_point_wkb_to_y(expr: pl.Expr) -> pl.Expr:
-    """Get y value from little endian point."""
+def _point_wkb_to_y(expr: pl.Expr) -> pl.Expr:
+    """Get y value from little endian ISO point wkb."""
     return expr.bin.slice(13, 8).bin.reinterpret(dtype=pl.Float64)
 
 
-def _le_point_wkb_to_z(expr: pl.Expr) -> pl.Expr:
-    """Get z value from little endian point."""
+def _point_wkb_to_z(expr: pl.Expr) -> pl.Expr:
+    """Get z value from little endian ISO point wkb."""
     return expr.bin.slice(21, 8).bin.reinterpret(dtype=pl.Float64)
 
 
-def _le_point_wkb_to_m_wo_z(expr: pl.Expr) -> pl.Expr:
-    """Get m value from little endian point without z coordinate."""
+def _point_wkb_to_m_wo_z(expr: pl.Expr) -> pl.Expr:
+    """Get m value from little endian ISO point wkb without z coordinate."""
     return expr.bin.slice(21, 8).bin.reinterpret(dtype=pl.Float64)
 
 
-def _le_point_wkb_to_m_w_z(expr: pl.Expr) -> pl.Expr:
-    """Get m value from little endian point with z coordinate."""
+def _point_wkb_to_m_w_z(expr: pl.Expr) -> pl.Expr:
+    """Get m value from little endian ISO point wkb with z coordinate."""
     return expr.bin.slice(29, 8).bin.reinterpret(dtype=pl.Float64)
 
 
@@ -309,8 +309,10 @@ class GeometryProperties:
     def get_x(self) -> pl.Expr:
         """Return the x-coordinate of a point.
 
+        This expression does not use shapely.
+
         This expression parses the spatial series WKB to extract the x-coordinate of a
-        point.  Non-point geometries will return nan.
+        point.  Non-point geometries will return nan, the same as shapely.
         """
         g_bin = self._expr.struct.field("wkb_geometry").bin
         return (
@@ -319,10 +321,10 @@ class GeometryProperties:
                 g_bin.starts_with(b"\x01\x01\x00\x00\x00")  # "point"
                 | g_bin.starts_with(b"\x01\xe9\x03\x00\x00")  # "pointZ iso"
                 | g_bin.starts_with(b"\x01\xd1\x07\x00\x00")  # "pointM iso"
-                | g_bin.starts_with(b"\x01\xb9\x0b\x00\x00")  # "pointZM iso"
+                | g_bin.starts_with(b"\x01\xb9\x0b\x00\x00"),  # "pointZM iso"
             )
             .then(
-                _le_point_wkb_to_x(self._expr.struct.field("wkb_geometry")),
+                _point_wkb_to_x(self._expr.struct.field("wkb_geometry")),
             )
             .otherwise(
                 pl.lit(float("nan"), dtype=pl.Float64),
@@ -332,8 +334,10 @@ class GeometryProperties:
     def get_y(self) -> pl.Expr:
         """Return the y-coordinate of a point.
 
+        This expression does not use shapely.
+
         This expression parses the spatial series WKB to extract the y-coordinate of a
-        point.  Non-point geometries will return nan.
+        point.  Non-point geometries will return nan, the same as shapely.
         """
         g_bin = self._expr.struct.field("wkb_geometry").bin
         return (
@@ -342,10 +346,10 @@ class GeometryProperties:
                 g_bin.starts_with(b"\x01\x01\x00\x00\x00")  # "point"
                 | g_bin.starts_with(b"\x01\xe9\x03\x00\x00")  # "pointZ iso"
                 | g_bin.starts_with(b"\x01\xd1\x07\x00\x00")  # "pointM iso"
-                | g_bin.starts_with(b"\x01\xb9\x0b\x00\x00")  # "pointZM iso"
+                | g_bin.starts_with(b"\x01\xb9\x0b\x00\x00"),  # "pointZM iso"
             )
             .then(
-                _le_point_wkb_to_y(self._expr.struct.field("wkb_geometry")),
+                _point_wkb_to_y(self._expr.struct.field("wkb_geometry")),
             )
             .otherwise(
                 pl.lit(float("nan"), dtype=pl.Float64),
@@ -355,18 +359,21 @@ class GeometryProperties:
     def get_z(self) -> pl.Expr:
         """Return the z-coordinate of a point.
 
+        This expression does not use shapely.
+
         This expression parses the spatial series WKB to extract the z-coordinate of a
-        point.  Non-point geometries, and points without a Z value will return nan.
+        point.  Non-point geometries, and points without a Z value will return nan,
+        the same as shapely.
         """
         g_bin = self._expr.struct.field("wkb_geometry").bin
         return (
             pl.when(
                 # little endian points
                 g_bin.starts_with(b"\x01\xe9\x03\x00\x00")  # "pointZ iso"
-                | g_bin.starts_with(b"\x01\xb9\x0b\x00\x00")  # "pointZM iso"
+                | g_bin.starts_with(b"\x01\xb9\x0b\x00\x00"),  # "pointZM iso"
             )
             .then(
-                _le_point_wkb_to_z(self._expr.struct.field("wkb_geometry")),
+                _point_wkb_to_z(self._expr.struct.field("wkb_geometry")),
             )
             .otherwise(
                 pl.lit(float("nan"), dtype=pl.Float64),
@@ -376,23 +383,26 @@ class GeometryProperties:
     def get_m(self) -> pl.Expr:
         """Return the m-coordinate of a point.
 
+        This expression does not use shapely.
+
         This expression parses the spatial series WKB to extract the m-coordinate of a
-        point.  Non-point geometries, and points without an M value will return nan.
+        point.  Non-point geometries, and points without an M value will return nan,
+        the same as shapely.
         """
         g_bin = self._expr.struct.field("wkb_geometry").bin
         return (
             pl.when(
                 # little endian points
-                g_bin.starts_with(b"\x01\xd1\x07\x00\x00")  # "pointM iso"
+                g_bin.starts_with(b"\x01\xd1\x07\x00\x00"),  # "pointM iso"
             )
             .then(
-                _le_point_wkb_to_m_wo_z(self._expr.struct.field("wkb_geometry")),
+                _point_wkb_to_m_wo_z(self._expr.struct.field("wkb_geometry")),
             )
             .when(
-                g_bin.starts_with(b"\x01\xb9\x0b\x00\x00")  # "pointZM iso"
+                g_bin.starts_with(b"\x01\xb9\x0b\x00\x00"),  # "pointZM iso"
             )
             .then(
-                _le_point_wkb_to_m_w_z(self._expr.struct.field("wkb_geometry")),
+                _point_wkb_to_m_w_z(self._expr.struct.field("wkb_geometry")),
             )
             .otherwise(
                 pl.lit(float("nan"), dtype=pl.Float64),
@@ -1268,14 +1278,14 @@ class Predicates:
                 # pythagorean theorem to other within distance little endian
                 le_to_other_dwithin = (
                     (
-                        _le_point_wkb_to_x(
+                        _point_wkb_to_x(
                             separated.struct.field("point_wkb"),
                         )
                         - other.x
                     )
                     ** 2
                     + (
-                        _le_point_wkb_to_y(separated.struct.field("point_wkb"))
+                        _point_wkb_to_y(separated.struct.field("point_wkb"))
                         - other.y
                     )
                     ** 2
