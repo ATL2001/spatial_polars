@@ -56,8 +56,7 @@ def _separate_points_and_other(expr: pl.Expr) -> pl.Expr:
     """Categorize input wkb from spatial series.
 
     Creates a struct of:
-        * point_wkb_little
-        * point_wkb_big
+        * point_wkb
         * non_point_wkb
 
     """
@@ -68,29 +67,11 @@ def _separate_points_and_other(expr: pl.Expr) -> pl.Expr:
             g_bin.starts_with(b"\x01\x01\x00\x00\x00")  # "point"
             | g_bin.starts_with(b"\x01\xe9\x03\x00\x00")  # "pointZ iso"
             | g_bin.starts_with(b"\x01\xd1\x07\x00\x00")  # "pointM iso"
-            | g_bin.starts_with(b"\x01\xb9\x0b\x00\x00")  # "pointZM iso"
-            | g_bin.starts_with(b"\x01\x01\x00\x00\x80")  # "pointZ extended"
-            | g_bin.starts_with(b"\x01\x01\x00\x00@")  # "pointM extended"
-            | g_bin.starts_with(b"\x01\x01\x00\x00\xc0"),  # "pointZM extended"
+            | g_bin.starts_with(b"\x01\xb9\x0b\x00\x00"),  # "pointZM iso"
         )
         .then(
             pl.struct(
-                point_wkb_little=expr.struct.field("wkb_geometry"),
-            ),
-        )
-        .when(
-            # big endian points
-            g_bin.starts_with(b"\x00\x00\x00\x00\x01")  # "point"
-            | g_bin.starts_with(b"\x00\x00\x00\x03\xe9")  # "pointZ iso"
-            | g_bin.starts_with(b"\x00\x00\x00\x07\xd1")  # "pointM iso"
-            | g_bin.starts_with(b"\x00\x00\x00\x0b\xb9")  # "pointZM iso"
-            | g_bin.starts_with(b"\x00\x80\x00\x00\x01")  # "pointZ extended"
-            | g_bin.starts_with(b"\x00@\x00\x00\x01")  # "pointM extended"
-            | g_bin.starts_with(b"\x00\xc0\x00\x00\x01"),  # "pointZM extended"
-        )
-        .then(
-            pl.struct(
-                point_wkb_big=expr.struct.field("wkb_geometry"),
+                point_wkb=expr.struct.field("wkb_geometry"),
             ),
         )
         .otherwise(
@@ -1288,13 +1269,13 @@ class Predicates:
                 le_to_other_dwithin = (
                     (
                         _le_point_wkb_to_x(
-                            separated.struct.field("point_wkb_little"),
+                            separated.struct.field("point_wkb"),
                         )
                         - other.x
                     )
                     ** 2
                     + (
-                        _le_point_wkb_to_y(separated.struct.field("point_wkb_little"))
+                        _le_point_wkb_to_y(separated.struct.field("point_wkb"))
                         - other.y
                     )
                     ** 2
