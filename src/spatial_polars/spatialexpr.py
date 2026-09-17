@@ -15,6 +15,8 @@ import shapely
 
 from .io import spatial_series_dtype
 
+WKB_LINESTRING_TYPE = 2
+
 
 def _process_wkb_input(expr: pl.Expr) -> pl.Expr:
     """Return process_wkb_input.
@@ -249,15 +251,30 @@ class GeometryProperties:
         )
 
     def get_num_points(self) -> pl.Expr:
-        """Return the number of points in a linestring or linearring.
+        """Return the number of points in a linestring.
 
-        Returns 0 for not-a-geometry values. The number of points in geometries other
-        than linestring or linearring equals zero.
+        This expression does not use shapely.
+
+        This expression parses the spatial series WKB to extract the number of points in
+        a linestring.
+
+        Returns 0 for non-linestring geometries, the same as shapely.
         """
-        return self._expr.map_batches(
-            lambda s: s.spatial.get_num_points(),
-            return_dtype=pl.Int32,
-            is_elementwise=True,
+        g_bin = self._expr.struct.field("wkb_geometry").bin
+
+        return (
+            pl.when(
+                g_bin.slice(1, 4)
+                .bin.reinterpret(dtype=pl.UInt32)
+                .mod(10)  # get only the ones digit
+                == WKB_LINESTRING_TYPE,
+            )
+            .then(
+                g_bin.slice(5, 4).bin.reinterpret(dtype=pl.UInt32),
+            )
+            .otherwise(
+                pl.lit(0, dtype=pl.UInt32),
+            )
         )
 
     def get_point(self, index: int) -> pl.Expr:
@@ -278,7 +295,7 @@ class GeometryProperties:
         )
 
     def get_type_id(self) -> pl.Expr:
-        """Return the type ID of a geometry.
+        """Return the shapely type ID of a geometry.
 
         This expression does not use shapely.
 
@@ -314,10 +331,10 @@ class GeometryProperties:
         return (
             g_bin.slice(1, 4)
             .bin.reinterpret(dtype=pl.UInt32)
-            .mod(10) # get only the ones digit
-            .replace({1:0, 2:1}) # replace 1:0 (points), 2:1(lines) to match shapely
-            .fill_null(-1) # set Nones to -1 to match shapely
-            .cast(pl.Int8) # no need to keep this as a UInt32
+            .mod(10)  # get only the ones digit
+            .replace({1: 0, 2: 1})  # replace 1:0 (points), 2:1(lines) to match shapely
+            .fill_null(-1)  # set Nones to -1 to match shapely
+            .cast(pl.Int8)  # no need to keep this as a UInt32
         )
 
     def get_x(self) -> pl.Expr:
@@ -1298,10 +1315,7 @@ class Predicates:
                         - other.x
                     )
                     ** 2
-                    + (
-                        _point_wkb_to_y(separated.struct.field("point_wkb"))
-                        - other.y
-                    )
+                    + (_point_wkb_to_y(separated.struct.field("point_wkb")) - other.y)
                     ** 2
                 ).sqrt() <= distance
 
@@ -2536,7 +2550,8 @@ class SpatialExpr(
         crs_wkt = pyproj.CRS.from_user_input(crs).to_wkt()
         crs = pl.lit(crs_wkt, dtype=pl.Categorical).alias("crs")
         return pl.struct(
-            _process_wkb_input(self._expr).alias("wkb_geometry"), crs,
+            _process_wkb_input(self._expr).alias("wkb_geometry"),
+            crs,
         ).name.keep()
 
     def from_WKT(self, crs: Any = 4326) -> pl.Expr:  #  NOQA:ANN401, N802

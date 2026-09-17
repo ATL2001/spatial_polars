@@ -118,7 +118,9 @@ def test_non_m_points_get_m(non_m_points_wkb: list[bytes]) -> None:
 def test_get_type_id() -> None:
     """Test the get_type_id expression."""
     expected_df = pl.Series(
-        values=[0, 0, 1, 1, 3, 3, 3, 4, 5, 6, 7, -1], name="type", dtype=pl.Int8,
+        values=[0, 0, 1, 1, 3, 3, 3, 4, 5, 6, 7, -1],
+        name="type",
+        dtype=pl.Int8,
     ).to_frame()
 
     point = shapely.Point(0, 0)
@@ -133,7 +135,7 @@ def test_get_type_id() -> None:
     multi_polygon = shapely.MultiPolygon([polygon, polygon2])
     geometry_collection = shapely.GeometryCollection([point, polygon2])
 
-    shapely_geometries = [
+    test_geoms = [
         point,
         point_z,
         line_string,
@@ -148,7 +150,7 @@ def test_get_type_id() -> None:
         None,
     ]
 
-    wkbs = [[shapely.to_wkb(g, byte_order=1, flavor="iso")] for g in shapely_geometries]
+    wkbs = [[shapely.to_wkb(g, byte_order=1, flavor="iso")] for g in test_geoms]
 
     result = pl.DataFrame(wkbs, orient="row", schema={"wkb": pl.Binary}).select(
         pl.col("wkb")
@@ -156,5 +158,44 @@ def test_get_type_id() -> None:
         .alias("geometry")
         .spatial.get_type_id()
         .alias("type"),
+    )
+    assert_frame_equal(result, expected_df)
+
+
+def test_get_num_points() -> None:
+    """Test the get_num_points expression."""
+    expected_df = pl.Series(
+        values=[2, 2, 3, 3, 0, 0, 0, 0],
+        name="num_points",
+        dtype=pl.UInt32,
+    ).to_frame()
+
+    two_point_line_string = shapely.LineString([[0, 0], [1, 1]])
+    two_point_line_string_z = shapely.LineString([[0, 0, 0], [1, 1, 1]])
+    three_point_line_string = shapely.LineString([[0, 0], [1, 1], [2, 0]])
+    three_point_line_string_z = shapely.LineString([[0, 0, 0], [1, 1, 1], [2, 0, 0]])
+    point = shapely.Point(0, 0)
+    polygon = shapely.Polygon([[0, 0], [1, 0], [1, 1], [0, 1], [0, 0]])
+    multi_line_string = shapely.MultiLineString([((0, 0), (1, 1)), ((-1, 0), (1, 0))])
+
+    test_geoms = [
+        two_point_line_string, #2
+        two_point_line_string_z, #2
+        three_point_line_string, #3
+        three_point_line_string_z, #3
+        point, #0
+        polygon, #0
+        multi_line_string, #0
+        None, #0
+    ]
+
+    wkbs = [[shapely.to_wkb(g, byte_order=1, flavor="iso")] for g in test_geoms]
+
+    result = pl.DataFrame(wkbs, orient="row", schema={"wkb": pl.Binary}).select(
+        pl.col("wkb")
+        .spatial.from_WKB()
+        .alias("geometry")
+        .spatial.get_num_points()
+        .alias("num_points"),
     )
     assert_frame_equal(result, expected_df)
