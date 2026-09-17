@@ -280,30 +280,44 @@ class GeometryProperties:
     def get_type_id(self) -> pl.Expr:
         """Return the type ID of a geometry.
 
+        This expression does not use shapely.
+
+        This expression parses the spatial series WKB to extract the geometry type id of
+        a geometry.  If None is provided -1 is returned, the same as shapely.
+
         Possible values are:
 
-        None (missing) is -1
+            * None (missing) is -1
 
-        POINT is 0
+            * POINT is 0
 
-        LINESTRING is 1
+            * LINESTRING is 1
 
-        LINEARRING is 2
+            * POLYGON is 3
 
-        POLYGON is 3
+            * MULTIPOINT is 4
 
-        MULTIPOINT is 4
+            * MULTILINESTRING is 5
 
-        MULTILINESTRING is 5
+            * MULTIPOLYGON is 6
 
-        MULTIPOLYGON is 6
+            * GEOMETRYCOLLECTION is 7
 
-        GEOMETRYCOLLECTION is 7
+        Note:
+        ----
+        Shapely has the possibility of returning `2` for linear rings, however linear
+        ring geometry objects in shapely are converted to linestrings when serialized to
+        wkb, therefore, spatial polars will never return 2.
+
         """
-        return self._expr.map_batches(
-            lambda s: s.spatial.get_type_id(),
-            return_dtype=pl.Int8,
-            is_elementwise=True,
+        g_bin = self._expr.struct.field("wkb_geometry").bin
+        return (
+            g_bin.slice(1, 4)
+            .bin.reinterpret(dtype=pl.UInt32)
+            .mod(10) # get only the ones digit
+            .replace({1:0, 2:1}) # replace 1:0 (points), 2:1(lines) to match shapely
+            .fill_null(-1) # set Nones to -1 to match shapely
+            .cast(pl.Int8) # no need to keep this as a UInt32
         )
 
     def get_x(self) -> pl.Expr:

@@ -1,4 +1,5 @@
 import polars as pl
+import shapely
 from polars.testing import assert_frame_equal
 
 import spatial_polars  # noqa: F401
@@ -112,3 +113,48 @@ def test_non_m_points_get_m(non_m_points_wkb: list[bytes]) -> None:
             pl.col("geometry").spatial.from_WKB().spatial.get_m().alias("m_coord"),
         )
         assert_frame_equal(result, expected_df)
+
+
+def test_get_type_id() -> None:
+    """Test the get_type_id expression."""
+    expected_df = pl.Series(
+        values=[0, 0, 1, 1, 3, 3, 3, 4, 5, 6, 7, -1], name="type", dtype=pl.Int8,
+    ).to_frame()
+
+    point = shapely.Point(0, 0)
+    point_z = shapely.Point(0, 0, 0)
+    line_string = shapely.LineString([[0, 0], [1, 1]])
+    line_string_z = shapely.LineString([[0, 0, 0], [1, 1, 1]])
+    polygon = shapely.Polygon([[0, 0], [1, 0], [1, 1], [0, 1], [0, 0]])
+    polygon2 = shapely.Polygon([[10, 10], [11, 10], [11, 11], [10, 11], [10, 10]])
+    polygon_z = shapely.Polygon([[0, 0, 0], [1, 0, 0], [1, 1, 0], [0, 1, 0], [0, 0, 0]])
+    multi_point = shapely.MultiPoint([(0.0, 0.0), (1.0, 1.0)])
+    multi_line_string = shapely.MultiLineString([((0, 0), (1, 1)), ((-1, 0), (1, 0))])
+    multi_polygon = shapely.MultiPolygon([polygon, polygon2])
+    geometry_collection = shapely.GeometryCollection([point, polygon2])
+
+    shapely_geometries = [
+        point,
+        point_z,
+        line_string,
+        line_string_z,
+        polygon,
+        polygon2,
+        polygon_z,
+        multi_point,
+        multi_line_string,
+        multi_polygon,
+        geometry_collection,
+        None,
+    ]
+
+    wkbs = [[shapely.to_wkb(g, byte_order=1, flavor="iso")] for g in shapely_geometries]
+
+    result = pl.DataFrame(wkbs, orient="row", schema={"wkb": pl.Binary}).select(
+        pl.col("wkb")
+        .spatial.from_WKB()
+        .alias("geometry")
+        .spatial.get_type_id()
+        .alias("type"),
+    )
+    assert_frame_equal(result, expected_df)
