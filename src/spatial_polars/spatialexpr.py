@@ -162,7 +162,7 @@ class GeometryProperties:
             (
                 g_bin.slice(1, 4).bin.reinterpret(dtype=pl.UInt32) // 1000 % 10
             )  # get the thousands digit
-            .replace({3: 4, 2: 3, 1: 3, 0: 2})  # 3k: 4d 2k/1k: 3d, 0K: 2d
+            .replace({3: 4, 2: 3, 1: 3, 0: 2})  # 3k=4d 2k=3d 1k=3d, 0K=2d
             .fill_null(-1)  # Nones get -1
             .cast(pl.Int8)
         )
@@ -659,14 +659,35 @@ class Predicates:
     def has_z(self) -> pl.Expr:
         """Return True if a geometry has Z coordinates.
 
-        Note that for GEOS < 3.12 this function returns False if the (first) Z
-        coordinate equals NaN.
+        This expression does not use shapely.
+
+        This expression parses the spatial series WKB to extract the wkb geometry type
+        and determine if the geometry has a Z coordinate.
         """
-        return self._expr.map_batches(
-            lambda s: s.spatial.has_z(),
-            return_dtype=pl.Boolean,
-            is_elementwise=True,
+        g_bin = self._expr.struct.field("wkb_geometry").bin
+        return (
+            (
+                g_bin.slice(1, 4).bin.reinterpret(dtype=pl.UInt32) // 1000 % 10
+            )  # get the thousands digit
+            .replace_strict({3: True, 1: True}, default=False)
         )
+
+    def has_m(self) -> pl.Expr:
+        """Return True if a geometry has M coordinates.
+
+        This expression does not use shapely.
+
+        This expression parses the spatial series WKB to extract the wkb geometry type
+        and determine if the geometry has a M coordinate.
+        """
+        g_bin = self._expr.struct.field("wkb_geometry").bin
+        return (
+            (
+                g_bin.slice(1, 4).bin.reinterpret(dtype=pl.UInt32) // 1000 % 10
+            )  # get the thousands digit
+            .replace_strict({3: True, 2: True}, default=False)
+        )
+
 
     def is_ccw(self) -> pl.Expr:
         """Return True if a linestring or linearring is counterclockwise.

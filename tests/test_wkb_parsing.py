@@ -202,23 +202,52 @@ def test_get_num_points() -> None:
 
 
 def test_get_coordinate_dimension(
-    little_endian_all_dimensions_points_wkb: list[bytes],
+    all_points_wkb: list[bytes],
 ) -> None:
     """Test get_coordinate_dimension expression."""
-    expected_df = pl.Series(
-        values=[2, 3, 3, 4, -1],
-        name="coordinate_dimension",
-        dtype=pl.Int8,
-    ).to_frame()
+    for wkb in [*all_points_wkb, None]:
+        expected = shapely.get_coordinate_dimension(shapely.from_wkb(wkb))
 
-    result = pl.DataFrame(
-        [[wkb] for wkb in [*little_endian_all_dimensions_points_wkb, None]],
-        orient="row",
-        schema={"wkb": pl.Binary},
-    ).select(
-        pl.col("wkb")
-        .spatial.from_WKB()
-        .spatial.get_coordinate_dimension()
-        .alias("coordinate_dimension"),
-    )
-    assert_frame_equal(result, expected_df)
+        result = pl.DataFrame(
+                [[wkb]],
+                orient="row",
+                schema={"wkb": pl.Binary},
+            ).select(
+                pl.col("wkb")
+                .spatial.from_WKB()
+                .spatial.get_coordinate_dimension().alias("get_coordinate_dimension"),
+            )["get_coordinate_dimension"][0]
+        assert result==expected
+
+def test_has_z(all_points_wkb: list[bytes])->None:
+    """Test has_z expression."""
+    for wkb in [*all_points_wkb, None]:
+        expected = shapely.has_z(shapely.from_wkb(wkb))
+
+        result = pl.DataFrame(
+                [[wkb]],
+                orient="row",
+                schema={"wkb": pl.Binary},
+            ).select(
+                pl.col("wkb")
+                .spatial.from_WKB()
+                .spatial.has_z().alias("has_z"),
+            )["has_z"][0]
+        assert result==expected
+
+
+def test_has_m(all_points_wkb: list[bytes])->None:
+    """Test has_m expression."""
+    for wkb in [*all_points_wkb, None]:
+        expected = shapely.has_m(shapely.from_wkb(wkb))
+
+        result = pl.DataFrame(
+                [[wkb]],
+                orient="row",
+                schema={"wkb": pl.Binary},
+            ).select(
+                pl.col("wkb")
+                .spatial.from_WKB()
+                .spatial.has_m().alias("has_m"),
+            )["has_m"][0]
+        assert result==expected
