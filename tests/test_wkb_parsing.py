@@ -179,14 +179,14 @@ def test_get_num_points() -> None:
     multi_line_string = shapely.MultiLineString([((0, 0), (1, 1)), ((-1, 0), (1, 0))])
 
     test_geoms = [
-        two_point_line_string, #2
-        two_point_line_string_z, #2
-        three_point_line_string, #3
-        three_point_line_string_z, #3
-        point, #0
-        polygon, #0
-        multi_line_string, #0
-        None, #0
+        two_point_line_string,  # 2
+        two_point_line_string_z,  # 2
+        three_point_line_string,  # 3
+        three_point_line_string_z,  # 3
+        point,  # 0
+        polygon,  # 0
+        multi_line_string,  # 0
+        None,  # 0
     ]
 
     wkbs = [[shapely.to_wkb(g, byte_order=1, flavor="iso")] for g in test_geoms]
@@ -197,5 +197,28 @@ def test_get_num_points() -> None:
         .alias("geometry")
         .spatial.get_num_points()
         .alias("num_points"),
+    )
+    assert_frame_equal(result, expected_df)
+
+
+def test_get_coordinate_dimension(
+    little_endian_all_dimensions_points_wkb: list[bytes],
+) -> None:
+    """Test get_coordinate_dimension expression."""
+    expected_df = pl.Series(
+        values=[2, 3, 3, 4, -1],
+        name="coordinate_dimension",
+        dtype=pl.Int8,
+    ).to_frame()
+
+    result = pl.DataFrame(
+        [[wkb] for wkb in [*little_endian_all_dimensions_points_wkb, None]],
+        orient="row",
+        schema={"wkb": pl.Binary},
+    ).select(
+        pl.col("wkb")
+        .spatial.from_WKB()
+        .spatial.get_coordinate_dimension()
+        .alias("coordinate_dimension"),
     )
     assert_frame_equal(result, expected_df)

@@ -373,3 +373,17 @@ def non_m_points_wkb() -> list[bytes]:
         point_z_big_endian_iso_wkb,
         point_z_big_endian_extended_wkb,
     ]
+
+
+@pytest.fixture
+def little_endian_all_dimensions_points_wkb() -> list[bytes]:
+    """List of points wkb iso/little endian.
+
+    xy, xyz, xym, xyzm coordinates are all included.
+    """
+    return [
+        point_little_endian_iso_wkb,
+        point_z_little_endian_iso_wkb,
+        point_m_little_endian_iso_wkb,
+        point_zm_little_endian_iso_wkb,
+    ]

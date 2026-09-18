@@ -142,6 +142,11 @@ class GeometryProperties:
     def get_coordinate_dimension(self) -> pl.Expr:
         """Return the dimensionality of the coordinates in a geometry (2, 3 or 4).
 
+        This expression does not use shapely.
+
+        This expression parses the spatial series WKB to extract the coordinate
+        dimension of geometries based on their WKB geometry type.
+
         The return value can be one of the following:
 
         Return 2 for geometries with XY coordinate types,
@@ -150,15 +155,16 @@ class GeometryProperties:
 
         Return 4 for XYZM coordinate types,
 
-        Return -1 for missing geometries (None values).
-
-        Note that with GEOS < 3.12, if the first Z coordinate equals nan, this function
-        will return 2. Geometries with M coordinates are supported with GEOS >= 3.12.
+        Return -1 for missing geometries (None values), the same as shapely.
         """
-        return self._expr.map_batches(
-            lambda s: s.spatial.get_coordinate_dimension(),
-            return_dtype=pl.Int8,
-            is_elementwise=True,
+        g_bin = self._expr.struct.field("wkb_geometry").bin
+        return (
+            (
+                g_bin.slice(1, 4).bin.reinterpret(dtype=pl.UInt32) // 1000 % 10
+            )  # get the thousands digit
+            .replace({3: 4, 2: 3, 1: 3, 0: 2})  # 3k: 4d 2k/1k: 3d, 0K: 2d
+            .fill_null(-1)  # Nones get -1
+            .cast(pl.Int8)
         )
 
     def get_dimensions(self) -> pl.Expr:
