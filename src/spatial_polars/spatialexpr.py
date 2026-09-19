@@ -16,6 +16,15 @@ import shapely
 from .io import spatial_series_dtype
 
 WKB_LINESTRING_TYPE = 2
+PREFIX_POINT_XY = b"\x01\x01\x00\x00\x00"
+PREFIX_POINT_XYZ = b"\x01\xe9\x03\x00\x00"
+PREFIX_POINT_XYM = b"\x01\xd1\x07\x00\x00"
+PREFIX_POINT_XYZM = b"\x01\xb9\x0b\x00\x00"
+
+PREFIX_LINESTRING_XY = b"\x01\x02\x00\x00\x00"
+PREFIX_LINESTRING_XYZ = b"\x01\xea\x03\x00\x00"
+PREFIX_LINESTRING_XYM = b"\x01\xd2\x07\x00\x00"
+PREFIX_LINESTRING_XYZM = b"\x01\xba\x0b\x00\x00"
 
 
 def _process_wkb_input(expr: pl.Expr) -> pl.Expr:
@@ -66,10 +75,10 @@ def _separate_points_and_other(expr: pl.Expr) -> pl.Expr:
     return (
         pl.when(
             # little endian points
-            g_bin.starts_with(b"\x01\x01\x00\x00\x00")  # "point"
-            | g_bin.starts_with(b"\x01\xe9\x03\x00\x00")  # "pointZ iso"
-            | g_bin.starts_with(b"\x01\xd1\x07\x00\x00")  # "pointM iso"
-            | g_bin.starts_with(b"\x01\xb9\x0b\x00\x00"),  # "pointZM iso"
+            g_bin.starts_with(PREFIX_POINT_XY)
+            | g_bin.starts_with(PREFIX_POINT_XYZ)
+            | g_bin.starts_with(PREFIX_POINT_XYM)
+            | g_bin.starts_with(PREFIX_POINT_XYZM),
         )
         .then(
             pl.struct(
@@ -283,22 +292,91 @@ class GeometryProperties:
             )
         )
 
-    def get_point(self, index: int) -> pl.Expr:
-        """Return the nth point of a linestring or linearring."""
+    def get_point(self, index: int | None = None) -> pl.Expr:
+        """Return the nth point of a linestring.
+
+        This expression does not use shapely.
+
+        This expression parses the spatial series WKB to extract the nth point of
+        linestrings. Negative values count from the end of the linestring backwards.
+
+        """
         if index is not None:
-            return self._expr.map_batches(
-                lambda s: s.spatial.get_point(index),
-                return_dtype=spatial_series_dtype,
-                is_elementwise=True,
-            )
-        # expect struct with two geometries.
-        return self._expr.map_batches(
-            lambda combined: combined.struct[0].spatial.get_point(
-                combined.struct[1],
-            ),
-            return_dtype=spatial_series_dtype,
-            is_elementwise=True,
+            geoms = self._expr
+            pnt_num = pl.lit(index)
+        else:
+            geoms = self._expr.struct[0]
+            pnt_num = self._expr.struct[1]
+
+        crs = geoms.struct.field("crs")
+        g_bin = geoms.struct.field("wkb_geometry").bin
+        # coordinate_dimension returns -1 for Nones, be sure to not use that.
+        coordinate_dimension = geoms.spatial.get_coordinate_dimension().replace(
+            {-1: None},
         )
+        slice_length = coordinate_dimension * 8
+
+        slice_start = (
+            pl.when(pnt_num >= 0)
+            .then(
+                9 + (pnt_num * coordinate_dimension * 8),
+            )
+            .otherwise(
+                pnt_num * coordinate_dimension * 8,
+            )
+        )
+
+        coordinates = g_bin.slice(slice_start, slice_length)
+
+        has_z = geoms.spatial.has_z()
+        mas_m = geoms.spatial.has_m()
+
+        point_geom = (
+            pl.when(
+                (geoms.struct.field("wkb_geometry").is_null())
+                | (coordinates.bin.size() < slice_length)
+                | ~(
+                    g_bin.starts_with(PREFIX_LINESTRING_XY)
+                    | g_bin.starts_with(PREFIX_LINESTRING_XYZ)
+                    | g_bin.starts_with(PREFIX_LINESTRING_XYM)
+                    | g_bin.starts_with(PREFIX_LINESTRING_XYZM)
+                ),
+            )
+            .then(
+                pl.lit(value=None, dtype=pl.Binary),
+            )
+            .when(~has_z, ~mas_m)
+            .then(
+                (
+                    pl.lit(PREFIX_POINT_XY).bin.encode("hex")
+                    + coordinates.bin.encode("hex")
+                ).str.decode("hex"),
+            )
+            .when(has_z, ~mas_m)
+            .then(
+                (
+                    pl.lit(PREFIX_POINT_XYZ).bin.encode("hex")
+                    + coordinates.bin.encode("hex")
+                ).str.decode("hex"),
+            )
+            .when(~has_z, mas_m)
+            .then(
+                (
+                    pl.lit(PREFIX_POINT_XYM).bin.encode("hex")
+                    + coordinates.bin.encode("hex")
+                ).str.decode("hex"),
+            )
+            .when(has_z, mas_m)
+            .then(
+                (
+                    pl.lit(PREFIX_POINT_XYZM).bin.encode("hex")
+                    + coordinates.bin.encode("hex")
+                ).str.decode("hex"),
+            )
+            .alias("wkb_geometry")
+        )
+
+        return pl.struct(point_geom, crs)
 
     def get_type_id(self) -> pl.Expr:
         """Return the shapely type ID of a geometry.
@@ -355,10 +433,10 @@ class GeometryProperties:
         return (
             pl.when(
                 # little endian points
-                g_bin.starts_with(b"\x01\x01\x00\x00\x00")  # "point"
-                | g_bin.starts_with(b"\x01\xe9\x03\x00\x00")  # "pointZ iso"
-                | g_bin.starts_with(b"\x01\xd1\x07\x00\x00")  # "pointM iso"
-                | g_bin.starts_with(b"\x01\xb9\x0b\x00\x00"),  # "pointZM iso"
+                g_bin.starts_with(PREFIX_POINT_XY)
+                | g_bin.starts_with(PREFIX_POINT_XYZ)
+                | g_bin.starts_with(PREFIX_POINT_XYM)
+                | g_bin.starts_with(PREFIX_POINT_XYZM),
             )
             .then(
                 _point_wkb_to_x(self._expr.struct.field("wkb_geometry")),
@@ -380,10 +458,10 @@ class GeometryProperties:
         return (
             pl.when(
                 # little endian points
-                g_bin.starts_with(b"\x01\x01\x00\x00\x00")  # "point"
-                | g_bin.starts_with(b"\x01\xe9\x03\x00\x00")  # "pointZ iso"
-                | g_bin.starts_with(b"\x01\xd1\x07\x00\x00")  # "pointM iso"
-                | g_bin.starts_with(b"\x01\xb9\x0b\x00\x00"),  # "pointZM iso"
+                g_bin.starts_with(PREFIX_POINT_XY)
+                | g_bin.starts_with(PREFIX_POINT_XYZ)
+                | g_bin.starts_with(PREFIX_POINT_XYM)
+                | g_bin.starts_with(PREFIX_POINT_XYZM),
             )
             .then(
                 _point_wkb_to_y(self._expr.struct.field("wkb_geometry")),
@@ -405,9 +483,8 @@ class GeometryProperties:
         g_bin = self._expr.struct.field("wkb_geometry").bin
         return (
             pl.when(
-                # little endian points
-                g_bin.starts_with(b"\x01\xe9\x03\x00\x00")  # "pointZ iso"
-                | g_bin.starts_with(b"\x01\xb9\x0b\x00\x00"),  # "pointZM iso"
+                g_bin.starts_with(PREFIX_POINT_XYZ)
+                | g_bin.starts_with(PREFIX_POINT_XYZM),
             )
             .then(
                 _point_wkb_to_z(self._expr.struct.field("wkb_geometry")),
@@ -430,13 +507,13 @@ class GeometryProperties:
         return (
             pl.when(
                 # little endian points
-                g_bin.starts_with(b"\x01\xd1\x07\x00\x00"),  # "pointM iso"
+                g_bin.starts_with(PREFIX_POINT_XYM),
             )
             .then(
                 _point_wkb_to_m_wo_z(self._expr.struct.field("wkb_geometry")),
             )
             .when(
-                g_bin.starts_with(b"\x01\xb9\x0b\x00\x00"),  # "pointZM iso"
+                g_bin.starts_with(PREFIX_POINT_XYZM),
             )
             .then(
                 _point_wkb_to_m_w_z(self._expr.struct.field("wkb_geometry")),
@@ -687,7 +764,6 @@ class Predicates:
             )  # get the thousands digit
             .replace_strict({3: True, 2: True}, default=False)
         )
-
 
     def is_ccw(self) -> pl.Expr:
         """Return True if a linestring or linearring is counterclockwise.

@@ -141,7 +141,7 @@ def test_has_z(all_wkbs: list[bytes]) -> None:
         ).select(
             pl.col("wkb").spatial.from_WKB().spatial.has_z(),
         ).item()
-        assert result == expected
+        np.testing.assert_equal(result, expected)
 
 
 def test_has_m(all_wkbs: list[bytes]) -> None:
@@ -155,4 +155,27 @@ def test_has_m(all_wkbs: list[bytes]) -> None:
         ).select(
             pl.col("wkb").spatial.from_WKB().spatial.has_m(),
         ).item()
-        assert result == expected
+        np.testing.assert_equal(result, expected)
+
+def test_get_point(all_wkbs: list[bytes]) -> None:
+    """Test get_point expression."""
+    for wkb in [*all_wkbs, None]:
+        for pnt_num in range(-4, 4):
+            expected = shapely.get_point(shapely.from_wkb(wkb), pnt_num)
+            df = pl.DataFrame(
+                {"wkb": wkb},
+                schema={"wkb": pl.Binary},
+            ).with_columns(
+                pl.col.wkb.spatial.from_WKB().alias("geometry"),
+                pl.lit(pnt_num).alias("vec"),
+            ).select(
+                pl.col.geometry.spatial.get_point(pnt_num).alias("get_point_scalar"),
+                pl.struct(pl.col.geometry, pl.col.vec).spatial.get_point(index=None).alias("get_point_vec"),
+            )
+
+            scalar_result = shapely.from_wkb(df.select(pl.col.get_point_scalar.struct.field("wkb_geometry")).item())
+            vectorized_result = shapely.from_wkb(df.select(pl.col.get_point_vec.struct.field("wkb_geometry")).item())
+
+            np.testing.assert_equal(scalar_result, expected, err_msg=f"{wkb=}")
+            np.testing.assert_equal(vectorized_result, expected, err_msg=f"{wkb=}")
+
