@@ -139,8 +139,8 @@ def test_has_z(all_wkbs: list[bytes]) -> None:
             orient="row",
             schema={"wkb": pl.Binary},
         ).select(
-            pl.col("wkb").spatial.from_WKB().spatial.has_z().alias("has_z"),
-        )["has_z"][0]
+            pl.col("wkb").spatial.from_WKB().spatial.has_z(),
+        ).item()
         assert result == expected
 
 
@@ -150,10 +150,9 @@ def test_has_m(all_wkbs: list[bytes]) -> None:
         expected = shapely.has_m(shapely.from_wkb(wkb))
 
         result = pl.DataFrame(
-            [[wkb]],
-            orient="row",
+            {"wkb": wkb},
             schema={"wkb": pl.Binary},
         ).select(
-            pl.col("wkb").spatial.from_WKB().spatial.has_m().alias("has_m"),
-        )["has_m"][0]
+            pl.col("wkb").spatial.from_WKB().spatial.has_m(),
+        ).item()
         assert result == expected
