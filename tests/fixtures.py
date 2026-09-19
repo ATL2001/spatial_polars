@@ -82,249 +82,90 @@ def two_more_points_df() -> pl.DataFrame:
         ).alias("geometry"),
     )
 
-
-# x =0 y=1 z=2 m=3
-point_little_endian_iso_wkb = shapely.to_wkb(
-    shapely.Point(0, 1),
-    flavor="iso",
-    byte_order=1,
-)
-point_little_endian_extended_wkb = shapely.to_wkb(
-    shapely.Point(0, 1),
-    flavor="extended",
-    byte_order=1,
-)
-
-point_z_little_endian_iso_wkb = shapely.to_wkb(
-    shapely.Point(0, 1, 2),
-    flavor="iso",
-    byte_order=1,
-)
-point_z_little_endian_extended_wkb = shapely.to_wkb(
-    shapely.Point(0, 1, 2),
-    flavor="extended",
-    byte_order=1,
-)
-
-point_m_little_endian_iso_wkb = b"\x01\xd1\x07\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\xf0?\x00\x00\x00\x00\x00\x00\x08@"  # noqa: E501
-point_m_little_endian_extended_wkb = b"\x01\x01\x00\x00@\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\xf0?\x00\x00\x00\x00\x00\x00\x08@"  # noqa: E501
-
-point_zm_little_endian_iso_wkb = b"\x01\xb9\x0b\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\xf0?\x00\x00\x00\x00\x00\x00\x00@\x00\x00\x00\x00\x00\x00\x08@"  # noqa: E501
-point_zm_little_endian_extended_wkb = b"\x01\x01\x00\x00\xc0\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\xf0?\x00\x00\x00\x00\x00\x00\x00@\x00\x00\x00\x00\x00\x00\x08@"  # noqa: E501
-
-point_big_endian_iso_wkb = shapely.to_wkb(
-    shapely.Point(0, 1),
-    flavor="iso",
-    byte_order=0,
-)
-point_big_endian_extended_wkb = shapely.to_wkb(
-    shapely.Point(0, 1),
-    flavor="extended",
-    byte_order=0,
-)
-
-point_z_big_endian_iso_wkb = shapely.to_wkb(
-    shapely.Point(0, 1, 2),
-    flavor="iso",
-    byte_order=0,
-)
-point_z_big_endian_extended_wkb = shapely.to_wkb(
-    shapely.Point(0, 1, 2),
-    flavor="extended",
-    byte_order=0,
-)
-
-point_m_big_endian_iso_wkb = b"\x00\x00\x00\x07\xd1\x00\x00\x00\x00\x00\x00\x00\x00?\xf0\x00\x00\x00\x00\x00\x00@\x08\x00\x00\x00\x00\x00\x00"  # noqa: E501
-point_m_big_endian_extended_wkb = b"\x00@\x00\x00\x01\x00\x00\x00\x00\x00\x00\x00\x00?\xf0\x00\x00\x00\x00\x00\x00@\x08\x00\x00\x00\x00\x00\x00"  # noqa: E501
-
-point_zm_big_endian_iso_wkb = b"\x00\x00\x00\x0b\xb9\x00\x00\x00\x00\x00\x00\x00\x00?\xf0\x00\x00\x00\x00\x00\x00@\x00\x00\x00\x00\x00\x00\x00@\x08\x00\x00\x00\x00\x00\x00"  # noqa: E501
-point_zm_big_endian_extended_wkb = b"\x00\xc0\x00\x00\x01\x00\x00\x00\x00\x00\x00\x00\x00?\xf0\x00\x00\x00\x00\x00\x00@\x00\x00\x00\x00\x00\x00\x00@\x08\x00\x00\x00\x00\x00\x00"  # noqa: E501
-
-
-extended_points = [
-    point_little_endian_extended_wkb,
-    point_z_little_endian_extended_wkb,
-    point_m_little_endian_extended_wkb,
-    point_zm_little_endian_extended_wkb,
-    point_big_endian_extended_wkb,
-    point_z_big_endian_extended_wkb,
-    point_m_big_endian_extended_wkb,
-    point_zm_big_endian_extended_wkb,
-]
-little_endian_extended_with_srid = [
-    shapely.to_wkb(
-        shapely.set_srid(shapely.from_wkb(pt), 4326),
-        byte_order=1,
-        flavor="extended",
-        include_srid=True,
-    )
-    for pt in extended_points
-]
-big_endian_extended_with_srid = [
-    shapely.to_wkb(
-        shapely.set_srid(shapely.from_wkb(pt), 4326),
-        byte_order=0,
-        flavor="extended",
-        include_srid=True,
-    )
-    for pt in extended_points
-]
-
-extended_points_z = [
-    point_z_little_endian_extended_wkb,
-    point_zm_little_endian_extended_wkb,
-    point_z_big_endian_extended_wkb,
-    point_zm_big_endian_extended_wkb,
-]
-little_endian_extended_z_with_srid = [
-    shapely.to_wkb(
-        shapely.set_srid(shapely.from_wkb(pt), 4326),
-        byte_order=1,
-        flavor="extended",
-        include_srid=True,
-    )
-    for pt in extended_points_z
-]
-big_endian_extended_z_with_srid = [
-    shapely.to_wkb(
-        shapely.set_srid(shapely.from_wkb(pt), 4326),
-        byte_order=0,
-        flavor="extended",
-        include_srid=True,
-    )
-    for pt in extended_points_z
-]
-
-extended_points_m = [
-    point_m_little_endian_extended_wkb,
-    point_zm_little_endian_extended_wkb,
-    point_m_big_endian_extended_wkb,
-    point_zm_big_endian_extended_wkb,
-]
-little_endian_extended_m_with_srid = [
-    shapely.to_wkb(
-        shapely.set_srid(shapely.from_wkb(pt), 4326),
-        byte_order=1,
-        flavor="extended",
-        include_srid=True,
-    )
-    for pt in extended_points_m
-]
-big_endian_extended_m_with_srid = [
-    shapely.to_wkb(
-        shapely.set_srid(shapely.from_wkb(pt), 4326),
-        byte_order=0,
-        flavor="extended",
-        include_srid=True,
-    )
-    for pt in extended_points_m
-]
-
-
 @pytest.fixture
-def all_points_wkb() -> list[bytes]:
-    """List of points wkb iso/extended big/little endian.
+def all_wkbs() -> list[bytes]:
+    """List of all wkb possibilites.
 
-    xy, xyz, xym, xyzm coordinates are all included.
-    """
-    return [
-        point_little_endian_iso_wkb,
-        point_little_endian_extended_wkb,
-        point_z_little_endian_iso_wkb,
-        point_z_little_endian_extended_wkb,
-        point_m_little_endian_iso_wkb,
-        point_m_little_endian_extended_wkb,
-        point_zm_little_endian_iso_wkb,
-        point_zm_little_endian_extended_wkb,
-        point_big_endian_iso_wkb,
-        point_big_endian_extended_wkb,
-        point_z_big_endian_iso_wkb,
-        point_z_big_endian_extended_wkb,
-        point_m_big_endian_iso_wkb,
-        point_m_big_endian_extended_wkb,
-        point_zm_big_endian_iso_wkb,
-        point_zm_big_endian_extended_wkb,
-        *little_endian_extended_with_srid,
-        *big_endian_extended_with_srid,
-    ]
+    144 different WKB entries.
 
+    ### Includes WKB for:
+        #### Geometry Types:
 
-@pytest.fixture
-def z_points_wkb() -> list[bytes]:
-    """List of points wkb iso/extended big/little endian.
+            * point
+            * linestring
+            * polygon
+            * multipoint
+            * multilinestring
+            * multipolygon
 
-    xyz, xyzm coordinates are all included.
-    """
-    return [
-        point_z_little_endian_iso_wkb,
-        point_z_little_endian_extended_wkb,
-        point_zm_little_endian_iso_wkb,
-        point_zm_little_endian_extended_wkb,
-        point_z_big_endian_iso_wkb,
-        point_z_big_endian_extended_wkb,
-        point_zm_big_endian_iso_wkb,
-        point_zm_big_endian_extended_wkb,
-        *little_endian_extended_z_with_srid,
-        *big_endian_extended_z_with_srid,
-    ]
+        #### Coordinates:
 
+            * xy
+            * xyz
+            * xym
+            * xyzm
 
-@pytest.fixture
-def m_points_wkb() -> list[bytes]:
-    """List of points wkb iso/extended big/little endian.
+        #### Byte order:
 
-    xym, xyzm coordinates are all included.
-    """
-    return [
-        point_m_little_endian_iso_wkb,
-        point_m_little_endian_extended_wkb,
-        point_zm_little_endian_iso_wkb,
-        point_zm_little_endian_extended_wkb,
-        point_m_big_endian_iso_wkb,
-        point_m_big_endian_extended_wkb,
-        point_zm_big_endian_iso_wkb,
-        point_zm_big_endian_extended_wkb,
-        *little_endian_extended_m_with_srid,
-        *big_endian_extended_m_with_srid,
-    ]
+            * little endian
+            * big endian
 
+        #### WKB flavor:
 
-@pytest.fixture
-def non_points_wkb() -> list[bytes]:
-    """List of non-points wkb iso/extended big/little endian.
+            * ISO
+            * Extended
+            * Extended with embedded SRID
 
-    xy, xyz coordinates are all included.
-
-    Geometry types of LineString, LinearRing, MultiLineString, Polygon, MultiPolygon are
-    included.
     """
     wkbs = []
     geoms = [
-        shapely.LineString([(0, 0), (1, 1)]),
-        shapely.LineString([(0, 0, 0), (1, 1, 1)]),
-        shapely.LinearRing([(0, 0), (1, 1), (1, 0)]),
-        shapely.LinearRing([(0, 0, 0), (1, 1, 1), (1, 0, -1)]),
-        shapely.MultiLineString([((0, 0), (1, 1)), ((-1, 0), (1, 0))]),
-        shapely.MultiLineString([((0, 0, 0), (1, 1, 1)), ((-1, 0, 1), (1, 0, -1))]),
-        shapely.Polygon([[0, 0], [1, 0], [1, 1], [0, 1], [0, 0]]),
-        shapely.Polygon([[0, 0, 0], [1, 0, 0], [1, 1, 1], [0, 1, 1], [0, 0, 0]]),
+        shapely.Point(0, 1),
+        shapely.Point(0, 1, 2),
+        shapely.MultiPoint([(0, 1), (2, 3)]),
+        shapely.MultiPoint([(0, 1, 2), (3, 4, 5)]),
+        shapely.LineString([(0, 1), (2, 3)]),
+        shapely.LineString([(0, 1, 2), (3, 4, 5)]),
+        shapely.MultiLineString([((0, 1), (2, 3)), ((4, 5), (6, 7))]),
+        shapely.MultiLineString([((0, 1, 2), (3, 4, 5)), ((6, 7, 8), (9, 10, 11))]),
+        shapely.Polygon([[0, 0], [1, 2], [3, 4], [5, 6], [0, 0]]),
+        shapely.Polygon([[0, 0, 0], [1, 2, 3], [4, 5, 6], [7, 8, 9], [0, 0, 0]]),
         shapely.MultiPolygon(
             [
-                shapely.Polygon([[0, 0], [1, 0], [1, 1], [0, 1], [0, 0]]),
-                shapely.Polygon([[10, 10], [11, 10], [11, 11], [10, 11], [10, 10]]),
+                shapely.Polygon([[0, 0], [1, 2], [3, 4], [5, 6], [0, 0]]),
+                shapely.Polygon([[10, 10], [11, 12], [13, 14], [15, 16], [10, 10]]),
             ],
         ),
         shapely.MultiPolygon(
             [
                 shapely.Polygon(
-                    [[0, 0, 5], [1, 0, 5], [1, 1, 5], [0, 1, 5], [0, 0, 5]],
+                    [[0, 0, 0], [1, 2, 3], [4, 5, 6], [7, 8, 9], [0, 0, 0]],
                 ),
                 shapely.Polygon(
-                    [[10, 10, 5], [11, 10, 5], [11, 11, 5], [10, 11, 5], [10, 10, 5]],
+                    [[10, 10, 10], [11, 12, 13], [14, 15, 16], [17, 18, 19], [10, 10, 10]],
                 ),
             ],
         ),
     ]
+
+    m_geoms = []
+    for geom in geoms:
+        # replace Z coordinates with M
+        wkt = shapely.to_wkt(geom)
+        if "Z" in wkt:
+            m_geoms.append(shapely.from_wkt(wkt.replace("Z","M")))
+
+    # add some ZM geometries
+    m_geoms.extend([shapely.from_wkt(wkt) for wkt in [
+        "POINT ZM (0 1 2 3)",
+        "MULTIPOINT ZM ((0 1 2 3), (4 5 6 7))",
+        "LINESTRING ZM (0 1 2 6, 3 4 5 7)",
+        "MULTILINESTRING ZM ((0 1 2 12, 3 4 5 13), (6 7 8 14, 9 10 11 15))",
+        "POLYGON ZM ((0 0 0 0, 1 2 3 10, 4 5 6 11, 7 8 9 12, 0 0 0 0))",
+        "MULTIPOLYGON ZM (((0 0 0 0, 1 2 3 10, 4 5 6 11, 7 8 9 12, 0 0 0 0)), ((10 10 10 10, 11 12 13 20, 14 15 16 21, 17 18 19 22, 10 10 10 10)))",
+    ]])
+    geoms.extend(m_geoms)
+    geoms.sort(key=shapely.to_wkt)
+
     for byte_order in [1, 0]:
         for geom in geoms:
             wkbs.append(shapely.to_wkb(geom, byte_order=byte_order, flavor="iso"))
@@ -337,53 +178,3 @@ def non_points_wkb() -> list[bytes]:
                 ),
             )
     return wkbs
-
-
-@pytest.fixture
-def non_z_points_wkb() -> list[bytes]:
-    """List of points wkb iso/extended big/little endian.
-
-    xy, xym coordinates are all included.
-    """
-    return [
-        point_little_endian_iso_wkb,
-        point_little_endian_extended_wkb,
-        point_m_little_endian_iso_wkb,
-        point_m_little_endian_extended_wkb,
-        point_big_endian_iso_wkb,
-        point_big_endian_extended_wkb,
-        point_m_big_endian_iso_wkb,
-        point_m_big_endian_extended_wkb,
-    ]
-
-
-@pytest.fixture
-def non_m_points_wkb() -> list[bytes]:
-    """List of points wkb iso/extended big/little endian.
-
-    xy, xyz coordinates are all included.
-    """
-    return [
-        point_little_endian_iso_wkb,
-        point_little_endian_extended_wkb,
-        point_z_little_endian_iso_wkb,
-        point_z_little_endian_extended_wkb,
-        point_big_endian_iso_wkb,
-        point_big_endian_extended_wkb,
-        point_z_big_endian_iso_wkb,
-        point_z_big_endian_extended_wkb,
-    ]
-
-
-@pytest.fixture
-def little_endian_all_dimensions_points_wkb() -> list[bytes]:
-    """List of points wkb iso/little endian.
-
-    xy, xyz, xym, xyzm coordinates are all included.
-    """
-    return [
-        point_little_endian_iso_wkb,
-        point_z_little_endian_iso_wkb,
-        point_m_little_endian_iso_wkb,
-        point_zm_little_endian_iso_wkb,
-    ]
