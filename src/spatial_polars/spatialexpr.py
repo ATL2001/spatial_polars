@@ -26,6 +26,38 @@ PREFIX_LINESTRING_XYZ = b"\x01\xea\x03\x00\x00"
 PREFIX_LINESTRING_XYM = b"\x01\xd2\x07\x00\x00"
 PREFIX_LINESTRING_XYZM = b"\x01\xba\x0b\x00\x00"
 
+PREFIX_POLYGON_XY = b"\x01\x03\x00\x00\x00"
+PREFIX_POLYGON_XYZ = b"\x01\xeb\x03\x00\x00"
+PREFIX_POLYGON_XYM = b"\x01\xd3\x07\x00\x00"
+PREFIX_POLYGON_XYZM = b"\x01\xbb\x0b\x00\x00"
+
+
+def _is_point(expr: pl.Expr) -> pl.Expr:
+    """Expression to determine if the WKB is a point."""
+    return (
+        expr.bin.starts_with(PREFIX_POINT_XY)
+        | expr.bin.starts_with(PREFIX_POINT_XYZ)
+        | expr.bin.starts_with(PREFIX_POINT_XYM)
+        | expr.bin.starts_with(PREFIX_POINT_XYZM)
+    )
+
+def _is_linestring(expr: pl.Expr) -> pl.Expr:
+    """Expression to determine if the WKB is a linestring."""
+    return (
+        expr.bin.starts_with(PREFIX_LINESTRING_XY)
+        | expr.bin.starts_with(PREFIX_LINESTRING_XYZ)
+        | expr.bin.starts_with(PREFIX_LINESTRING_XYM)
+        | expr.bin.starts_with(PREFIX_LINESTRING_XYZM)
+    )
+
+def _is_polygon(expr: pl.Expr) -> pl.Expr:
+    """Expression to determine if the WKB is a linestring."""
+    return (
+        expr.bin.starts_with(PREFIX_POLYGON_XY)
+        | expr.bin.starts_with(PREFIX_POLYGON_XYZ)
+        | expr.bin.starts_with(PREFIX_POLYGON_XYM)
+        | expr.bin.starts_with(PREFIX_POLYGON_XYZM)
+    )
 
 def _process_wkb_input(expr: pl.Expr) -> pl.Expr:
     """Return process_wkb_input.
@@ -71,14 +103,9 @@ def _separate_points_and_other(expr: pl.Expr) -> pl.Expr:
         * non_point_wkb
 
     """
-    g_bin = expr.struct.field("wkb_geometry").bin
     return (
         pl.when(
-            # little endian points
-            g_bin.starts_with(PREFIX_POINT_XY)
-            | g_bin.starts_with(PREFIX_POINT_XYZ)
-            | g_bin.starts_with(PREFIX_POINT_XYM)
-            | g_bin.starts_with(PREFIX_POINT_XYZM),
+            _is_point(expr.struct.field("wkb_geometry")),
         )
         .then(
             pl.struct(
@@ -335,11 +362,7 @@ class GeometryProperties:
             pl.when(
                 (geoms.struct.field("wkb_geometry").is_null())
                 | (coordinates.bin.size() < slice_length)
-                | ~(
-                    g_bin.starts_with(PREFIX_LINESTRING_XY)
-                    | g_bin.starts_with(PREFIX_LINESTRING_XYZ)
-                    | g_bin.starts_with(PREFIX_LINESTRING_XYM)
-                    | g_bin.starts_with(PREFIX_LINESTRING_XYZM)
+                | ~(_is_linestring(geoms.struct.field("wkb_geometry"))
                 ),
             )
             .then(
@@ -429,14 +452,9 @@ class GeometryProperties:
         This expression parses the spatial series WKB to extract the x-coordinate of a
         point.  Non-point geometries will return nan, the same as shapely.
         """
-        g_bin = self._expr.struct.field("wkb_geometry").bin
         return (
             pl.when(
-                # little endian points
-                g_bin.starts_with(PREFIX_POINT_XY)
-                | g_bin.starts_with(PREFIX_POINT_XYZ)
-                | g_bin.starts_with(PREFIX_POINT_XYM)
-                | g_bin.starts_with(PREFIX_POINT_XYZM),
+                _is_point(self._expr.struct.field("wkb_geometry")),
             )
             .then(
                 _point_wkb_to_x(self._expr.struct.field("wkb_geometry")),
@@ -454,14 +472,9 @@ class GeometryProperties:
         This expression parses the spatial series WKB to extract the y-coordinate of a
         point.  Non-point geometries will return nan, the same as shapely.
         """
-        g_bin = self._expr.struct.field("wkb_geometry").bin
         return (
             pl.when(
-                # little endian points
-                g_bin.starts_with(PREFIX_POINT_XY)
-                | g_bin.starts_with(PREFIX_POINT_XYZ)
-                | g_bin.starts_with(PREFIX_POINT_XYM)
-                | g_bin.starts_with(PREFIX_POINT_XYZM),
+                _is_point(self._expr.struct.field("wkb_geometry")),
             )
             .then(
                 _point_wkb_to_y(self._expr.struct.field("wkb_geometry")),
