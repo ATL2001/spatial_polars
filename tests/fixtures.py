@@ -82,11 +82,10 @@ def two_more_points_df() -> pl.DataFrame:
         ).alias("geometry"),
     )
 
+
 @pytest.fixture
 def all_wkbs() -> list[bytes]:
     """List of all wkb possibilites.
-
-    144 different WKB entries.
 
     ### Includes WKB for:
         #### Geometry Types:
@@ -141,8 +140,32 @@ def all_wkbs() -> list[bytes]:
                     [[0, 0, 0], [1, 2, 3], [4, 5, 6], [7, 8, 9], [0, 0, 0]],
                 ),
                 shapely.Polygon(
-                    [[10, 10, 10], [11, 12, 13], [14, 15, 16], [17, 18, 19], [10, 10, 10]],
+                    [
+                        [10, 10, 10],
+                        [11, 12, 13],
+                        [14, 15, 16],
+                        [17, 18, 19],
+                        [10, 10, 10],
+                    ],
                 ),
+            ],
+        ),
+        shapely.Polygon( # polygon with a hole
+            [
+                [0, 0],
+                [0, 10],
+                [10, 10],
+                [10, 0],
+                [0, 0],
+            ],
+            [
+                [
+                    [4, 4],
+                    [6, 4],
+                    [6, 6],
+                    [4, 6],
+                    [4, 4],
+                ],
             ],
         ),
     ]
@@ -152,17 +175,22 @@ def all_wkbs() -> list[bytes]:
         # replace Z coordinates with M
         wkt = shapely.to_wkt(geom)
         if "Z" in wkt:
-            m_geoms.append(shapely.from_wkt(wkt.replace("Z","M")))
+            m_geoms.append(shapely.from_wkt(wkt.replace("Z", "M")))
 
     # add some ZM geometries
-    m_geoms.extend([shapely.from_wkt(wkt) for wkt in [
-        "POINT ZM (0 1 2 3)",
-        "MULTIPOINT ZM ((0 1 2 3), (4 5 6 7))",
-        "LINESTRING ZM (0 1 2 6, 3 4 5 7)",
-        "MULTILINESTRING ZM ((0 1 2 12, 3 4 5 13), (6 7 8 14, 9 10 11 15))",
-        "POLYGON ZM ((0 0 0 0, 1 2 3 10, 4 5 6 11, 7 8 9 12, 0 0 0 0))",
-        "MULTIPOLYGON ZM (((0 0 0 0, 1 2 3 10, 4 5 6 11, 7 8 9 12, 0 0 0 0)), ((10 10 10 10, 11 12 13 20, 14 15 16 21, 17 18 19 22, 10 10 10 10)))",
-    ]])
+    m_geoms.extend(
+        [
+            shapely.from_wkt(wkt)
+            for wkt in [
+                "POINT ZM (0 1 2 3)",
+                "MULTIPOINT ZM ((0 1 2 3), (4 5 6 7))",
+                "LINESTRING ZM (0 1 2 6, 3 4 5 7)",
+                "MULTILINESTRING ZM ((0 1 2 12, 3 4 5 13), (6 7 8 14, 9 10 11 15))",
+                "POLYGON ZM ((0 0 0 0, 1 2 3 10, 4 5 6 11, 7 8 9 12, 0 0 0 0))",
+                "MULTIPOLYGON ZM (((0 0 0 0, 1 2 3 10, 4 5 6 11, 7 8 9 12, 0 0 0 0)), ((10 10 10 10, 11 12 13 20, 14 15 16 21, 17 18 19 22, 10 10 10 10)))",
+            ]
+        ]
+    )
     geoms.extend(m_geoms)
     geoms.sort(key=shapely.to_wkt)
 
