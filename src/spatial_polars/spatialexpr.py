@@ -284,12 +284,25 @@ class GeometryProperties:
     def get_num_interior_rings(self) -> pl.Expr:
         """Return number of internal rings in a polygon.
 
-        Returns 0 for not-a-geometry values.
+        This expression does not use shapely.
+
+        This expression parses the spatial series WKB to extract the number of interior
+        rings in a polygon.
+
+        Returns 0 for non-polygon geometries, the same as shapely.
         """
-        return self._expr.map_batches(
-            lambda s: s.spatial.get_num_interior_rings(),
-            return_dtype=pl.Int32,
-            is_elementwise=True,
+        g_bin = self._expr.struct.field("wkb_geometry").bin
+
+        return (
+            pl.when(
+                _is_polygon(self._expr.struct.field("wkb_geometry")),
+            )
+            .then(
+                g_bin.slice(5, 4).bin.reinterpret(dtype=pl.UInt32) -1,
+            )
+            .otherwise(
+                pl.lit(0, dtype=pl.UInt32),
+            )
         )
 
     def get_num_points(self) -> pl.Expr:
