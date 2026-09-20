@@ -150,7 +150,7 @@ def all_wkbs() -> list[bytes]:
                 ),
             ],
         ),
-        shapely.Polygon( # polygon with a hole
+        shapely.Polygon(  # polygon with a hole
             [
                 [0, 0],
                 [0, 10],
@@ -165,6 +165,31 @@ def all_wkbs() -> list[bytes]:
                     [6, 6],
                     [4, 6],
                     [4, 4],
+                ],
+            ],
+        ),
+        shapely.Polygon(  # polygon with two holes
+            [
+                [0, 0],
+                [0, 10],
+                [10, 10],
+                [10, 0],
+                [0, 0],
+            ],
+            [
+                [
+                    [6, 6],
+                    [8, 6],
+                    [8, 8],
+                    [6, 8],
+                    [6, 6],
+                ],
+                [
+                    [2, 2],
+                    [4, 2],
+                    [4, 4],
+                    [2, 4],
+                    [2, 2],
                 ],
             ],
         ),
