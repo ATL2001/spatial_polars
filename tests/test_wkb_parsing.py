@@ -179,3 +179,15 @@ def test_get_point(all_wkbs: list[bytes]) -> None:
             np.testing.assert_equal(scalar_result, expected, err_msg=f"{wkb=}")
             np.testing.assert_equal(vectorized_result, expected, err_msg=f"{wkb=}")
 
+
+def test_get_num_interior_rings(all_wkbs: list[bytes]) -> None:
+    """Test get_num_interior_rings expression."""
+    for wkb in [*all_wkbs, None]:
+        expected = shapely.get_num_interior_rings(shapely.from_wkb(wkb))
+        result = pl.DataFrame(
+            {"wkb": wkb},
+            schema={"wkb": pl.Binary},
+        ).select(
+            pl.col("wkb").spatial.from_WKB().spatial.get_num_interior_rings(),
+        ).item()
+        np.testing.assert_equal(result, expected)
