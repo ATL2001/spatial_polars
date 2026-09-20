@@ -1,7 +1,6 @@
 import numpy as np
 import polars as pl
 import shapely
-from polars.testing import assert_frame_equal
 
 import spatial_polars  # noqa: F401
 
@@ -22,7 +21,7 @@ def test_get_x(all_wkbs: list[bytes]) -> None:
             )
             .item()
         )
-        np.testing.assert_equal(result, expected)
+        np.testing.assert_equal(result, expected, err_msg=f"Failing wkb was: {wkb}")
 
 
 def test_get_y(all_wkbs: list[bytes]) -> None:
@@ -39,7 +38,7 @@ def test_get_y(all_wkbs: list[bytes]) -> None:
             )
             .item()
         )
-        np.testing.assert_equal(result, expected)
+        np.testing.assert_equal(result, expected, err_msg=f"Failing wkb was: {wkb}")
 
 
 def test_get_z(all_wkbs: list[bytes]) -> None:
@@ -56,7 +55,7 @@ def test_get_z(all_wkbs: list[bytes]) -> None:
             )
             .item()
         )
-        np.testing.assert_equal(result, expected)
+        np.testing.assert_equal(result, expected, err_msg=f"Failing wkb was: {wkb}")
 
 
 def test_get_m(all_wkbs: list[bytes]) -> None:
@@ -73,7 +72,7 @@ def test_get_m(all_wkbs: list[bytes]) -> None:
             )
             .item()
         )
-        np.testing.assert_equal(result, expected)
+        np.testing.assert_equal(result, expected, err_msg=f"Failing wkb was: {wkb}")
 
 
 def test_get_type_id(all_wkbs: list[bytes]) -> None:
@@ -90,7 +89,7 @@ def test_get_type_id(all_wkbs: list[bytes]) -> None:
             )
             .item()
         )
-        np.testing.assert_equal(result, expected)
+        np.testing.assert_equal(result, expected, err_msg=f"Failing wkb was: {wkb}")
 
 
 def test_get_num_points(all_wkbs: list[bytes]) -> None:
@@ -107,7 +106,7 @@ def test_get_num_points(all_wkbs: list[bytes]) -> None:
             )
             .item()
         )
-        np.testing.assert_equal(result, expected)
+        np.testing.assert_equal(result, expected, err_msg=f"Failing wkb was: {wkb}")
 
 
 def test_get_coordinate_dimension(
@@ -126,7 +125,7 @@ def test_get_coordinate_dimension(
             )
             .item()
         )
-        np.testing.assert_equal(result, expected)
+        np.testing.assert_equal(result, expected, err_msg=f"Failing wkb was: {wkb}")
 
 
 def test_has_z(all_wkbs: list[bytes]) -> None:
@@ -141,7 +140,7 @@ def test_has_z(all_wkbs: list[bytes]) -> None:
         ).select(
             pl.col("wkb").spatial.from_WKB().spatial.has_z(),
         ).item()
-        np.testing.assert_equal(result, expected)
+        np.testing.assert_equal(result, expected, err_msg=f"Failing wkb was: {wkb}")
 
 
 def test_has_m(all_wkbs: list[bytes]) -> None:
@@ -155,7 +154,7 @@ def test_has_m(all_wkbs: list[bytes]) -> None:
         ).select(
             pl.col("wkb").spatial.from_WKB().spatial.has_m(),
         ).item()
-        np.testing.assert_equal(result, expected)
+        np.testing.assert_equal(result, expected, err_msg=f"Failing wkb was: {wkb}")
 
 def test_get_point(all_wkbs: list[bytes]) -> None:
     """Test get_point expression."""
@@ -176,8 +175,8 @@ def test_get_point(all_wkbs: list[bytes]) -> None:
             scalar_result = shapely.from_wkb(df.select(pl.col.get_point_scalar.struct.field("wkb_geometry")).item())
             vectorized_result = shapely.from_wkb(df.select(pl.col.get_point_vec.struct.field("wkb_geometry")).item())
 
-            np.testing.assert_equal(scalar_result, expected, err_msg=f"{wkb=}")
-            np.testing.assert_equal(vectorized_result, expected, err_msg=f"{wkb=}")
+            np.testing.assert_equal(scalar_result, expected, err_msg=f"Failing wkb for scalar was: {wkb=}")
+            np.testing.assert_equal(vectorized_result, expected, err_msg=f"Failing wkb for vectorized was: {wkb=}")
 
 
 def test_get_num_interior_rings(all_wkbs: list[bytes]) -> None:
@@ -190,4 +189,4 @@ def test_get_num_interior_rings(all_wkbs: list[bytes]) -> None:
         ).select(
             pl.col("wkb").spatial.from_WKB().spatial.get_num_interior_rings(),
         ).item()
-        np.testing.assert_equal(result, expected)
+        np.testing.assert_equal(result, expected, err_msg=f"Failing wkb was: {wkb}")
