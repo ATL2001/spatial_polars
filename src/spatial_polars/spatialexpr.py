@@ -306,10 +306,7 @@ class GeometryProperties:
 
         return (
             pl.when(
-                g_bin.slice(1, 4)
-                .bin.reinterpret(dtype=pl.UInt32)
-                .mod(10)  # get only the ones digit
-                == WKB_LINESTRING_TYPE,
+                _is_linestring(self._expr.struct.field("wkb_geometry")),
             )
             .then(
                 g_bin.slice(5, 4).bin.reinterpret(dtype=pl.UInt32),
