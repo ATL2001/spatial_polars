@@ -15,7 +15,38 @@ import shapely
 
 from .io import spatial_series_dtype
 
-WKB_LINESTRING_TYPE = 2
+WKB_POINT_XY_TYPE = 1
+WKB_LINESTRING_XY_TYPE = 2
+WKB_POLYGON_XY_TYPE = 3
+WKB_MULTIPOINT_XY_TYPE = 4
+WKB_MULTILINESTRING_XY_TYPE = 5
+WKB_MULTIPOLYGON_XY_TYPE = 6
+WKB_GEOMETRYCOLLECTION_XY_TYPE = 7
+
+WKB_POINT_XYZ_TYPE = 1001
+WKB_LINESTRING_XYZ_TYPE = 1002
+WKB_POLYGON_XYZ_TYPE = 1003
+WKB_MULTIPOINT_XYZ_TYPE = 1004
+WKB_MULTILINESTRING_XYZ_TYPE = 1005
+WKB_MULTIPOLYGON_XYZ_TYPE = 1006
+WKB_GEOMETRYCOLLECTION_XYZ_TYPE = 1007
+
+WKB_POINT_XYM_TYPE = 2001
+WKB_LINESTRING_XYM_TYPE = 2002
+WKB_POLYGON_XYM_TYPE = 2003
+WKB_MULTIPOINT_XYM_TYPE = 2004
+WKB_MULTILINESTRING_XYM_TYPE = 2005
+WKB_MULTIPOLYGON_XYM_TYPE = 2006
+WKB_GEOMETRYCOLLECTION_XYM_TYPE = 2007
+
+WKB_POINT_XYZM_TYPE = 3001
+WKB_LINESTRING_XYZM_TYPE = 3002
+WKB_POLYGON_XYZM_TYPE = 3003
+WKB_MULTIPOINT_XYZM_TYPE = 3004
+WKB_MULTILINESTRING_XYZM_TYPE = 3005
+WKB_MULTIPOLYGON_XYZM_TYPE = 3006
+WKB_GEOMETRYCOLLECTION_XYZM_TYPE = 3007
+
 PREFIX_POINT_XY = b"\x01\x01\x00\x00\x00"
 PREFIX_POINT_XYZ = b"\x01\xe9\x03\x00\x00"
 PREFIX_POINT_XYM = b"\x01\xd1\x07\x00\x00"
@@ -41,6 +72,7 @@ def _is_point(expr: pl.Expr) -> pl.Expr:
         | expr.bin.starts_with(PREFIX_POINT_XYZM)
     )
 
+
 def _is_linestring(expr: pl.Expr) -> pl.Expr:
     """Expression to determine if the WKB is a linestring."""
     return (
@@ -50,6 +82,7 @@ def _is_linestring(expr: pl.Expr) -> pl.Expr:
         | expr.bin.starts_with(PREFIX_LINESTRING_XYZM)
     )
 
+
 def _is_polygon(expr: pl.Expr) -> pl.Expr:
     """Expression to determine if the WKB is a linestring."""
     return (
@@ -58,6 +91,7 @@ def _is_polygon(expr: pl.Expr) -> pl.Expr:
         | expr.bin.starts_with(PREFIX_POLYGON_XYM)
         | expr.bin.starts_with(PREFIX_POLYGON_XYZM)
     )
+
 
 def _process_wkb_input(expr: pl.Expr) -> pl.Expr:
     """Return process_wkb_input.
@@ -217,12 +251,67 @@ class GeometryProperties:
         )
 
     def get_exterior_ring(self) -> pl.Expr:
-        """Return the exterior ring of a polygon."""
-        return self._expr.map_batches(
-            lambda s: s.spatial.get_exterior_ring(),
-            return_dtype=spatial_series_dtype,
-            is_elementwise=True,
+        """Return the exterior ring of a polygon.
+
+        This expression does not use shapely.
+
+        This expression parses the spatial series WKB to extract the exterior ring of
+        polygons.
+        """
+        crs = self._expr.struct.field("crs")
+        g_bin = self._expr.struct.field("wkb_geometry").bin
+        geom_type = g_bin.slice(1, 4).bin.reinterpret(dtype=pl.UInt32)
+        points_in_ext_ring = g_bin.slice(9, 4).bin.reinterpret(dtype=pl.UInt32)
+
+        line_header = (
+            pl.when(
+                geom_type == WKB_POLYGON_XY_TYPE,
+            )
+            .then(
+                pl.lit(PREFIX_LINESTRING_XY),
+            )
+            .when(
+                geom_type == WKB_POLYGON_XYZ_TYPE,
+            )
+            .then(
+                pl.lit(PREFIX_LINESTRING_XYZ),
+            )
+            .when(
+                geom_type == WKB_POLYGON_XYM_TYPE,
+            )
+            .then(
+                pl.lit(PREFIX_LINESTRING_XYM),
+            )
+            .when(
+                geom_type == WKB_POLYGON_XYZM_TYPE,
+            )
+            .then(
+                pl.lit(PREFIX_LINESTRING_XYZM),
+            )
         )
+        coordinate_dimensions = self._expr.spatial.get_coordinate_dimension()
+
+        exterior_ring = (
+            pl.when(
+                _is_polygon(self._expr.struct.field("wkb_geometry")),
+            )
+            .then(
+                (
+                    line_header.bin.encode("hex")
+                    + g_bin.slice(
+                        9,
+                        points_in_ext_ring * coordinate_dimensions * 8 + 4,
+                    ).bin.encode("hex")
+                )
+                .str.decode("hex")
+                .alias("exterior_ring"),
+            )
+            .otherwise(
+                pl.lit(None, dtype=pl.Binary),
+            )
+            .alias("wkb_geometry")
+        )
+        return pl.struct(exterior_ring, crs)
 
     def get_geometry(self, index: int) -> pl.Expr:
         """Return the nth geometry from a collection of geometries.
@@ -298,7 +387,7 @@ class GeometryProperties:
                 _is_polygon(self._expr.struct.field("wkb_geometry")),
             )
             .then(
-                g_bin.slice(5, 4).bin.reinterpret(dtype=pl.UInt32) -1,
+                g_bin.slice(5, 4).bin.reinterpret(dtype=pl.UInt32) - 1,
             )
             .otherwise(
                 pl.lit(0, dtype=pl.UInt32),
@@ -372,8 +461,7 @@ class GeometryProperties:
             pl.when(
                 (geoms.struct.field("wkb_geometry").is_null())
                 | (coordinates.bin.size() < slice_length)
-                | ~(_is_linestring(geoms.struct.field("wkb_geometry"))
-                ),
+                | ~(_is_linestring(geoms.struct.field("wkb_geometry"))),
             )
             .then(
                 pl.lit(value=None, dtype=pl.Binary),
