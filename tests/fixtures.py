@@ -193,6 +193,46 @@ def all_wkbs() -> list[bytes]:
                 ],
             ],
         ),
+        shapely.MultiPolygon( # multi polygon with a hole in one
+            [
+                shapely.Polygon(
+                    [
+                        [0, 0],
+                        [0, 10],
+                        [10, 10],
+                        [10, 0],
+                        [0, 0],
+                    ],
+                    [
+                        [
+                            [4, 4],
+                            [6, 4],
+                            [6, 6],
+                            [4, 6],
+                            [4, 4],
+                        ],
+                    ],
+                ),
+                shapely.Polygon(
+                    [
+                        [10, 10, 10],
+                        [11, 12, 13],
+                        [14, 15, 16],
+                        [17, 18, 19],
+                        [10, 10, 10],
+                    ],
+                ),
+            ],
+        ),
+        shapely.MultiLineString( # multilinestring with 5 parts
+            [
+                ((0, 1), (2, 3)),
+                ((4, 5), (6, 7)),
+                ((8, 9), (10, 11)),
+                ((12, 13), (14, 15)),
+                ((16, 17), (18, 19)),
+            ]
+        ),
     ]
 
     m_geoms = []
