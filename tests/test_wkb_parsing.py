@@ -1,114 +1,261 @@
+import numpy as np
 import polars as pl
-from polars.testing import assert_frame_equal
+import shapely
 
 import spatial_polars  # noqa: F401
 
 from .fixtures import *  # noqa: F403
 
 
-def test_points_get_x(all_points_wkb: list[bytes]) -> None:
-    """Test point wkb parsing/get_x function for points."""
-    expected_df = pl.DataFrame({"x_coord": 0}, schema={"x_coord": pl.Float64})
-    for point_wkb in all_points_wkb:
-        result = pl.DataFrame(
-            {"geometry": point_wkb},
-        ).select(
-            pl.col("geometry").spatial.from_WKB().spatial.get_x().alias("x_coord"),
+def test_get_x(all_wkbs: list[bytes]) -> None:
+    """Test wkb parsing/get_x expression."""
+    for wkb in [*all_wkbs, None]:
+        expected = shapely.get_x(shapely.from_wkb(wkb))
+        result = (
+            pl.DataFrame(
+                {"wkb": wkb},
+                schema={"wkb": pl.Binary},
+            )
+            .select(
+                pl.col("wkb").spatial.from_WKB().spatial.get_x(),
+            )
+            .item()
         )
+        np.testing.assert_equal(result, expected, err_msg=f"Failing wkb was: {wkb}")
 
-        assert_frame_equal(result, expected_df)
 
-
-def test_points_get_y(all_points_wkb: list[bytes]) -> None:
-    """Test point wkb parsing/get_y function for points."""
-    expected_df = pl.DataFrame({"y_coord": 1}, schema={"y_coord": pl.Float64})
-    for point_wkb in all_points_wkb:
-        result = pl.DataFrame(
-            {"geometry": point_wkb},
-        ).select(
-            pl.col("geometry").spatial.from_WKB().spatial.get_y().alias("y_coord"),
+def test_get_y(all_wkbs: list[bytes]) -> None:
+    """Test wkb parsing/get_y expression."""
+    for wkb in [*all_wkbs, None]:
+        expected = shapely.get_y(shapely.from_wkb(wkb))
+        result = (
+            pl.DataFrame(
+                {"wkb": wkb},
+                schema={"wkb": pl.Binary},
+            )
+            .select(
+                pl.col("wkb").spatial.from_WKB().spatial.get_y(),
+            )
+            .item()
         )
+        np.testing.assert_equal(result, expected, err_msg=f"Failing wkb was: {wkb}")
 
-        assert_frame_equal(result, expected_df)
 
-
-def test_points_get_z(z_points_wkb: list[bytes]) -> None:
-    """Test point wkb parsing/get_z function for points."""
-    expected_df = pl.DataFrame({"z_coord": 2}, schema={"z_coord": pl.Float64})
-    for point_wkb in z_points_wkb:
-        result = pl.DataFrame(
-            {"geometry": point_wkb},
-        ).select(
-            pl.col("geometry").spatial.from_WKB().spatial.get_z().alias("z_coord"),
+def test_get_z(all_wkbs: list[bytes]) -> None:
+    """Test wkb parsing/get_z expression."""
+    for wkb in [*all_wkbs, None]:
+        expected = shapely.get_z(shapely.from_wkb(wkb))
+        result = (
+            pl.DataFrame(
+                {"wkb": wkb},
+                schema={"wkb": pl.Binary},
+            )
+            .select(
+                pl.col("wkb").spatial.from_WKB().spatial.get_z(),
+            )
+            .item()
         )
-        assert_frame_equal(result, expected_df)
+        np.testing.assert_equal(result, expected, err_msg=f"Failing wkb was: {wkb}")
 
 
-def test_points_get_m(m_points_wkb: list[bytes]) -> None:
-    """Test point wkb parsing/get_m function for points."""
-    expected_df = pl.DataFrame({"m_coord": 3}, schema={"m_coord": pl.Float64})
-    for point_wkb in m_points_wkb:
-        result = pl.DataFrame(
-            {"geometry": point_wkb},
-        ).select(
-            pl.col("geometry").spatial.from_WKB().spatial.get_m().alias("m_coord"),
+def test_get_m(all_wkbs: list[bytes]) -> None:
+    """Test wkb parsing/get_m expression."""
+    for wkb in [*all_wkbs, None]:
+        expected = shapely.get_m(shapely.from_wkb(wkb))
+        result = (
+            pl.DataFrame(
+                {"wkb": wkb},
+                schema={"wkb": pl.Binary},
+            )
+            .select(
+                pl.col("wkb").spatial.from_WKB().spatial.get_m(),
+            )
+            .item()
         )
-        assert_frame_equal(result, expected_df)
+        np.testing.assert_equal(result, expected, err_msg=f"Failing wkb was: {wkb}")
 
 
-def test_non_points_get_xyzm(non_points_wkb: list[bytes]) -> None:
-    """Test non-point wkb parsing/get_* function returns nan."""
-    expected_df = pl.DataFrame(
-        {
-            "x_coord": float("nan"),
-            "y_coord": float("nan"),
-            "z_coord": float("nan"),
-            "m_coord": float("nan"),
-        },
-        schema={
-            "x_coord": pl.Float64,
-            "y_coord": pl.Float64,
-            "z_coord": pl.Float64,
-            "m_coord": pl.Float64,
-        },
-    )
-    for geom_wkb in non_points_wkb:
-        result = pl.DataFrame(
-            {"geometry": geom_wkb},
-        ).select(
-            pl.col("geometry").spatial.from_WKB().spatial.get_m().alias("x_coord"),
-            pl.col("geometry").spatial.from_WKB().spatial.get_m().alias("y_coord"),
-            pl.col("geometry").spatial.from_WKB().spatial.get_m().alias("z_coord"),
-            pl.col("geometry").spatial.from_WKB().spatial.get_m().alias("m_coord"),
+def test_get_type_id(all_wkbs: list[bytes]) -> None:
+    """Test the get_type_id expression."""
+    for wkb in [*all_wkbs, None]:
+        expected = shapely.get_type_id(shapely.from_wkb(wkb))
+        result = (
+            pl.DataFrame(
+                {"wkb": wkb},
+                schema={"wkb": pl.Binary},
+            )
+            .select(
+                pl.col("wkb").spatial.from_WKB().spatial.get_type_id(),
+            )
+            .item()
         )
-        assert_frame_equal(result, expected_df)
+        np.testing.assert_equal(result, expected, err_msg=f"Failing wkb was: {wkb}")
 
 
-def test_non_z_points_get_z(non_z_points_wkb: list[bytes]) -> None:
-    """Test point wkb parsing/get_z function for points without z."""
-    expected_df = pl.DataFrame(
-        {"z_coord": float("nan")},
-        schema={"z_coord": pl.Float64},
-    )
-    for point_wkb in non_z_points_wkb:
-        result = pl.DataFrame(
-            {"geometry": point_wkb},
-        ).select(
-            pl.col("geometry").spatial.from_WKB().spatial.get_z().alias("z_coord"),
+def test_get_num_points(all_wkbs: list[bytes]) -> None:
+    """Test the get_num_points expression."""
+    for wkb in [*all_wkbs, None]:
+        expected = shapely.get_num_points(shapely.from_wkb(wkb))
+        result = (
+            pl.DataFrame(
+                {"wkb": wkb},
+                schema={"wkb": pl.Binary},
+            )
+            .select(
+                pl.col("wkb").spatial.from_WKB().spatial.get_num_points(),
+            )
+            .item()
         )
-        assert_frame_equal(result, expected_df)
+        np.testing.assert_equal(result, expected, err_msg=f"Failing wkb was: {wkb}")
 
 
-def test_non_m_points_get_m(non_m_points_wkb: list[bytes]) -> None:
-    """Test point wkb parsing/get_m function for points without z."""
-    expected_df = pl.DataFrame(
-        {"m_coord": float("nan")},
-        schema={"m_coord": pl.Float64},
-    )
-    for point_wkb in non_m_points_wkb:
-        result = pl.DataFrame(
-            {"geometry": point_wkb},
-        ).select(
-            pl.col("geometry").spatial.from_WKB().spatial.get_m().alias("m_coord"),
+def test_get_coordinate_dimension(
+    all_wkbs: list[bytes],
+) -> None:
+    """Test get_coordinate_dimension expression."""
+    for wkb in [*all_wkbs, None]:
+        expected = shapely.get_coordinate_dimension(shapely.from_wkb(wkb))
+        result = (
+            pl.DataFrame(
+                {"wkb": wkb},
+                schema={"wkb": pl.Binary},
+            )
+            .select(
+                pl.col("wkb").spatial.from_WKB().spatial.get_coordinate_dimension(),
+            )
+            .item()
         )
-        assert_frame_equal(result, expected_df)
+        np.testing.assert_equal(result, expected, err_msg=f"Failing wkb was: {wkb}")
+
+
+def test_has_z(all_wkbs: list[bytes]) -> None:
+    """Test has_z expression."""
+    for wkb in [*all_wkbs, None]:
+        expected = shapely.has_z(shapely.from_wkb(wkb))
+
+        result = (
+            pl.DataFrame(
+                [[wkb]],
+                orient="row",
+                schema={"wkb": pl.Binary},
+            )
+            .select(
+                pl.col("wkb").spatial.from_WKB().spatial.has_z(),
+            )
+            .item()
+        )
+        np.testing.assert_equal(result, expected, err_msg=f"Failing wkb was: {wkb}")
+
+
+def test_has_m(all_wkbs: list[bytes]) -> None:
+    """Test has_m expression."""
+    for wkb in [*all_wkbs, None]:
+        expected = shapely.has_m(shapely.from_wkb(wkb))
+
+        result = (
+            pl.DataFrame(
+                {"wkb": wkb},
+                schema={"wkb": pl.Binary},
+            )
+            .select(
+                pl.col("wkb").spatial.from_WKB().spatial.has_m(),
+            )
+            .item()
+        )
+        np.testing.assert_equal(result, expected, err_msg=f"Failing wkb was: {wkb}")
+
+
+def test_get_point(all_wkbs: list[bytes]) -> None:
+    """Test get_point expression."""
+    for wkb in [*all_wkbs, None]:
+        for pnt_num in range(-4, 4):
+            expected = shapely.get_point(shapely.from_wkb(wkb), pnt_num)
+            df = (
+                pl.DataFrame(
+                    {"wkb": wkb},
+                    schema={"wkb": pl.Binary},
+                )
+                .with_columns(
+                    pl.col.wkb.spatial.from_WKB().alias("geometry"),
+                    pl.lit(pnt_num).alias("vec"),
+                )
+                .select(
+                    pl.col.geometry.spatial.get_point(pnt_num).alias(
+                        "get_point_scalar",
+                    ),
+                    pl.struct(pl.col.geometry, pl.col.vec)
+                    .spatial.get_point(index=None)
+                    .alias("get_point_vec"),
+                )
+            )
+
+            scalar_result = shapely.from_wkb(
+                df.select(pl.col.get_point_scalar.struct.field("wkb_geometry")).item(),
+            )
+            vectorized_result = shapely.from_wkb(
+                df.select(pl.col.get_point_vec.struct.field("wkb_geometry")).item(),
+            )
+
+            np.testing.assert_equal(
+                scalar_result, expected, err_msg=f"Failing wkb for scalar was: {wkb=}",
+            )
+            np.testing.assert_equal(
+                vectorized_result,
+                expected,
+                err_msg=f"Failing wkb for vectorized was: {wkb=}",
+            )
+
+
+def test_get_num_interior_rings(all_wkbs: list[bytes]) -> None:
+    """Test get_num_interior_rings expression."""
+    for wkb in [*all_wkbs, None]:
+        expected = shapely.get_num_interior_rings(shapely.from_wkb(wkb))
+        result = (
+            pl.DataFrame(
+                {"wkb": wkb},
+                schema={"wkb": pl.Binary},
+            )
+            .select(
+                pl.col("wkb").spatial.from_WKB().spatial.get_num_interior_rings(),
+            )
+            .item()
+        )
+        np.testing.assert_equal(result, expected, err_msg=f"Failing wkb was: {wkb}")
+
+
+def test_get_num_coordinates(all_wkbs: list[bytes]) -> None:
+    """Test get_num_coordinates expression."""
+    for wkb in [*all_wkbs, None]:
+        expected = shapely.get_num_coordinates(shapely.from_wkb(wkb))
+        result = (
+            pl.DataFrame(
+                {"wkb": wkb},
+                schema={"wkb": pl.Binary},
+            )
+            .select(
+                pl.col("wkb").spatial.from_WKB().spatial.get_num_coordinates(),
+            )
+            .item()
+        )
+        np.testing.assert_equal(result, expected, err_msg=f"Failing wkb was: {wkb}")
+
+
+def test_get_exterior_ring(all_wkbs: list[bytes]) -> None:
+    """Test get_exterior_ring expression."""
+    for wkb in [*all_wkbs, None]:
+        expected = shapely.to_wkb(
+            shapely.get_exterior_ring(shapely.from_wkb(wkb)),
+            byte_order=1,
+            flavor="iso",
+        )
+        result = (
+            pl.DataFrame(
+                {"wkb": wkb},
+                schema={"wkb": pl.Binary},
+            )
+            .select(
+                pl.col("wkb").spatial.from_WKB().spatial.get_exterior_ring(),
+            )
+            .item()["wkb_geometry"]
+        )
+        np.testing.assert_equal(result, expected, err_msg=f"Failing wkb was: {wkb}")

@@ -15,6 +15,83 @@ import shapely
 
 from .io import spatial_series_dtype
 
+WKB_POINT_XY_TYPE = 1
+WKB_LINESTRING_XY_TYPE = 2
+WKB_POLYGON_XY_TYPE = 3
+WKB_MULTIPOINT_XY_TYPE = 4
+WKB_MULTILINESTRING_XY_TYPE = 5
+WKB_MULTIPOLYGON_XY_TYPE = 6
+WKB_GEOMETRYCOLLECTION_XY_TYPE = 7
+
+WKB_POINT_XYZ_TYPE = 1001
+WKB_LINESTRING_XYZ_TYPE = 1002
+WKB_POLYGON_XYZ_TYPE = 1003
+WKB_MULTIPOINT_XYZ_TYPE = 1004
+WKB_MULTILINESTRING_XYZ_TYPE = 1005
+WKB_MULTIPOLYGON_XYZ_TYPE = 1006
+WKB_GEOMETRYCOLLECTION_XYZ_TYPE = 1007
+
+WKB_POINT_XYM_TYPE = 2001
+WKB_LINESTRING_XYM_TYPE = 2002
+WKB_POLYGON_XYM_TYPE = 2003
+WKB_MULTIPOINT_XYM_TYPE = 2004
+WKB_MULTILINESTRING_XYM_TYPE = 2005
+WKB_MULTIPOLYGON_XYM_TYPE = 2006
+WKB_GEOMETRYCOLLECTION_XYM_TYPE = 2007
+
+WKB_POINT_XYZM_TYPE = 3001
+WKB_LINESTRING_XYZM_TYPE = 3002
+WKB_POLYGON_XYZM_TYPE = 3003
+WKB_MULTIPOINT_XYZM_TYPE = 3004
+WKB_MULTILINESTRING_XYZM_TYPE = 3005
+WKB_MULTIPOLYGON_XYZM_TYPE = 3006
+WKB_GEOMETRYCOLLECTION_XYZM_TYPE = 3007
+
+PREFIX_POINT_XY = b"\x01\x01\x00\x00\x00"
+PREFIX_POINT_XYZ = b"\x01\xe9\x03\x00\x00"
+PREFIX_POINT_XYM = b"\x01\xd1\x07\x00\x00"
+PREFIX_POINT_XYZM = b"\x01\xb9\x0b\x00\x00"
+
+PREFIX_LINESTRING_XY = b"\x01\x02\x00\x00\x00"
+PREFIX_LINESTRING_XYZ = b"\x01\xea\x03\x00\x00"
+PREFIX_LINESTRING_XYM = b"\x01\xd2\x07\x00\x00"
+PREFIX_LINESTRING_XYZM = b"\x01\xba\x0b\x00\x00"
+
+PREFIX_POLYGON_XY = b"\x01\x03\x00\x00\x00"
+PREFIX_POLYGON_XYZ = b"\x01\xeb\x03\x00\x00"
+PREFIX_POLYGON_XYM = b"\x01\xd3\x07\x00\x00"
+PREFIX_POLYGON_XYZM = b"\x01\xbb\x0b\x00\x00"
+
+
+def _is_point(expr: pl.Expr) -> pl.Expr:
+    """Expression to determine if the WKB is a point."""
+    return (
+        expr.bin.starts_with(PREFIX_POINT_XY)
+        | expr.bin.starts_with(PREFIX_POINT_XYZ)
+        | expr.bin.starts_with(PREFIX_POINT_XYM)
+        | expr.bin.starts_with(PREFIX_POINT_XYZM)
+    )
+
+
+def _is_linestring(expr: pl.Expr) -> pl.Expr:
+    """Expression to determine if the WKB is a linestring."""
+    return (
+        expr.bin.starts_with(PREFIX_LINESTRING_XY)
+        | expr.bin.starts_with(PREFIX_LINESTRING_XYZ)
+        | expr.bin.starts_with(PREFIX_LINESTRING_XYM)
+        | expr.bin.starts_with(PREFIX_LINESTRING_XYZM)
+    )
+
+
+def _is_polygon(expr: pl.Expr) -> pl.Expr:
+    """Expression to determine if the WKB is a linestring."""
+    return (
+        expr.bin.starts_with(PREFIX_POLYGON_XY)
+        | expr.bin.starts_with(PREFIX_POLYGON_XYZ)
+        | expr.bin.starts_with(PREFIX_POLYGON_XYM)
+        | expr.bin.starts_with(PREFIX_POLYGON_XYZM)
+    )
+
 
 def _process_wkb_input(expr: pl.Expr) -> pl.Expr:
     """Return process_wkb_input.
@@ -56,41 +133,17 @@ def _separate_points_and_other(expr: pl.Expr) -> pl.Expr:
     """Categorize input wkb from spatial series.
 
     Creates a struct of:
-        * point_wkb_little
-        * point_wkb_big
+        * point_wkb
         * non_point_wkb
 
     """
-    g_bin = expr.struct.field("wkb_geometry").bin
     return (
         pl.when(
-            # little endian points
-            g_bin.starts_with(b"\x01\x01\x00\x00\x00")  # "point"
-            | g_bin.starts_with(b"\x01\xe9\x03\x00\x00")  # "pointZ iso"
-            | g_bin.starts_with(b"\x01\xd1\x07\x00\x00")  # "pointM iso"
-            | g_bin.starts_with(b"\x01\xb9\x0b\x00\x00")  # "pointZM iso"
-            | g_bin.starts_with(b"\x01\x01\x00\x00\x80")  # "pointZ extended"
-            | g_bin.starts_with(b"\x01\x01\x00\x00@")  # "pointM extended"
-            | g_bin.starts_with(b"\x01\x01\x00\x00\xc0"),  # "pointZM extended"
+            _is_point(expr.struct.field("wkb_geometry")),
         )
         .then(
             pl.struct(
-                point_wkb_little=expr.struct.field("wkb_geometry"),
-            ),
-        )
-        .when(
-            # big endian points
-            g_bin.starts_with(b"\x00\x00\x00\x00\x01")  # "point"
-            | g_bin.starts_with(b"\x00\x00\x00\x03\xe9")  # "pointZ iso"
-            | g_bin.starts_with(b"\x00\x00\x00\x07\xd1")  # "pointM iso"
-            | g_bin.starts_with(b"\x00\x00\x00\x0b\xb9")  # "pointZM iso"
-            | g_bin.starts_with(b"\x00\x80\x00\x00\x01")  # "pointZ extended"
-            | g_bin.starts_with(b"\x00@\x00\x00\x01")  # "pointM extended"
-            | g_bin.starts_with(b"\x00\xc0\x00\x00\x01"),  # "pointZM extended"
-        )
-        .then(
-            pl.struct(
-                point_wkb_big=expr.struct.field("wkb_geometry"),
+                point_wkb=expr.struct.field("wkb_geometry"),
             ),
         )
         .otherwise(
@@ -101,28 +154,28 @@ def _separate_points_and_other(expr: pl.Expr) -> pl.Expr:
     )
 
 
-def _le_point_wkb_to_x(expr: pl.Expr) -> pl.Expr:
-    """Get x value from little endian point."""
+def _point_wkb_to_x(expr: pl.Expr) -> pl.Expr:
+    """Get x value from little endian ISO point wkb."""
     return expr.bin.slice(5, 8).bin.reinterpret(dtype=pl.Float64)
 
 
-def _le_point_wkb_to_y(expr: pl.Expr) -> pl.Expr:
-    """Get y value from little endian point."""
+def _point_wkb_to_y(expr: pl.Expr) -> pl.Expr:
+    """Get y value from little endian ISO point wkb."""
     return expr.bin.slice(13, 8).bin.reinterpret(dtype=pl.Float64)
 
 
-def _le_point_wkb_to_z(expr: pl.Expr) -> pl.Expr:
-    """Get z value from little endian point."""
+def _point_wkb_to_z(expr: pl.Expr) -> pl.Expr:
+    """Get z value from little endian ISO point wkb."""
     return expr.bin.slice(21, 8).bin.reinterpret(dtype=pl.Float64)
 
 
-def _le_point_wkb_to_m_wo_z(expr: pl.Expr) -> pl.Expr:
-    """Get m value from little endian point without z coordinate."""
+def _point_wkb_to_m_wo_z(expr: pl.Expr) -> pl.Expr:
+    """Get m value from little endian ISO point wkb without z coordinate."""
     return expr.bin.slice(21, 8).bin.reinterpret(dtype=pl.Float64)
 
 
-def _le_point_wkb_to_m_w_z(expr: pl.Expr) -> pl.Expr:
-    """Get m value from little endian point with z coordinate."""
+def _point_wkb_to_m_w_z(expr: pl.Expr) -> pl.Expr:
+    """Get m value from little endian ISO point wkb with z coordinate."""
     return expr.bin.slice(29, 8).bin.reinterpret(dtype=pl.Float64)
 
 
@@ -159,6 +212,11 @@ class GeometryProperties:
     def get_coordinate_dimension(self) -> pl.Expr:
         """Return the dimensionality of the coordinates in a geometry (2, 3 or 4).
 
+        This expression does not use shapely.
+
+        This expression parses the spatial series WKB to extract the coordinate
+        dimension of geometries based on their WKB geometry type.
+
         The return value can be one of the following:
 
         Return 2 for geometries with XY coordinate types,
@@ -167,15 +225,16 @@ class GeometryProperties:
 
         Return 4 for XYZM coordinate types,
 
-        Return -1 for missing geometries (None values).
-
-        Note that with GEOS < 3.12, if the first Z coordinate equals nan, this function
-        will return 2. Geometries with M coordinates are supported with GEOS >= 3.12.
+        Return -1 for missing geometries (None values), the same as shapely.
         """
-        return self._expr.map_batches(
-            lambda s: s.spatial.get_coordinate_dimension(),
-            return_dtype=pl.Int8,
-            is_elementwise=True,
+        g_bin = self._expr.struct.field("wkb_geometry").bin
+        return (
+            (
+                g_bin.slice(1, 4).bin.reinterpret(dtype=pl.UInt32) // 1000 % 10
+            )  # get the thousands digit
+            .replace({3: 4, 2: 3, 1: 3, 0: 2})  # 3k=4d 2k=3d 1k=3d, 0K=2d
+            .fill_null(-1)  # Nones get -1
+            .cast(pl.Int8)
         )
 
     def get_dimensions(self) -> pl.Expr:
@@ -192,12 +251,67 @@ class GeometryProperties:
         )
 
     def get_exterior_ring(self) -> pl.Expr:
-        """Return the exterior ring of a polygon."""
-        return self._expr.map_batches(
-            lambda s: s.spatial.get_exterior_ring(),
-            return_dtype=spatial_series_dtype,
-            is_elementwise=True,
+        """Return the exterior ring of a polygon.
+
+        This expression does not use shapely.
+
+        This expression parses the spatial series WKB to extract the exterior ring of
+        polygons.
+        """
+        crs = self._expr.struct.field("crs")
+        g_bin = self._expr.struct.field("wkb_geometry").bin
+        geom_type = g_bin.slice(1, 4).bin.reinterpret(dtype=pl.UInt32)
+        points_in_ext_ring = g_bin.slice(9, 4).bin.reinterpret(dtype=pl.UInt32)
+
+        line_header = (
+            pl.when(
+                geom_type == WKB_POLYGON_XY_TYPE,
+            )
+            .then(
+                pl.lit(PREFIX_LINESTRING_XY),
+            )
+            .when(
+                geom_type == WKB_POLYGON_XYZ_TYPE,
+            )
+            .then(
+                pl.lit(PREFIX_LINESTRING_XYZ),
+            )
+            .when(
+                geom_type == WKB_POLYGON_XYM_TYPE,
+            )
+            .then(
+                pl.lit(PREFIX_LINESTRING_XYM),
+            )
+            .when(
+                geom_type == WKB_POLYGON_XYZM_TYPE,
+            )
+            .then(
+                pl.lit(PREFIX_LINESTRING_XYZM),
+            )
         )
+        coordinate_dimensions = self._expr.spatial.get_coordinate_dimension()
+
+        exterior_ring = (
+            pl.when(
+                _is_polygon(self._expr.struct.field("wkb_geometry")),
+            )
+            .then(
+                (
+                    line_header.bin.encode("hex")
+                    + g_bin.slice(
+                        9,
+                        points_in_ext_ring * coordinate_dimensions * 8 + 4,
+                    ).bin.encode("hex")
+                )
+                .str.decode("hex")
+                .alias("exterior_ring"),
+            )
+            .otherwise(
+                pl.lit(None, dtype=pl.Binary),
+            )
+            .alias("wkb_geometry")
+        )
+        return pl.struct(exterior_ring, crs)
 
     def get_geometry(self, index: int) -> pl.Expr:
         """Return the nth geometry from a collection of geometries.
@@ -259,89 +373,189 @@ class GeometryProperties:
     def get_num_interior_rings(self) -> pl.Expr:
         """Return number of internal rings in a polygon.
 
-        Returns 0 for not-a-geometry values.
+        This expression does not use shapely.
+
+        This expression parses the spatial series WKB to extract the number of interior
+        rings in a polygon.
+
+        Returns 0 for non-polygon geometries, the same as shapely.
         """
-        return self._expr.map_batches(
-            lambda s: s.spatial.get_num_interior_rings(),
-            return_dtype=pl.Int32,
-            is_elementwise=True,
+        g_bin = self._expr.struct.field("wkb_geometry").bin
+
+        return (
+            pl.when(
+                _is_polygon(self._expr.struct.field("wkb_geometry")),
+            )
+            .then(
+                g_bin.slice(5, 4).bin.reinterpret(dtype=pl.UInt32) - 1,
+            )
+            .otherwise(
+                pl.lit(0, dtype=pl.UInt32),
+            )
         )
 
     def get_num_points(self) -> pl.Expr:
-        """Return the number of points in a linestring or linearring.
+        """Return the number of points in a linestring.
 
-        Returns 0 for not-a-geometry values. The number of points in geometries other
-        than linestring or linearring equals zero.
+        This expression does not use shapely.
+
+        This expression parses the spatial series WKB to extract the number of points in
+        a linestring.
+
+        Returns 0 for non-linestring geometries, the same as shapely.
         """
-        return self._expr.map_batches(
-            lambda s: s.spatial.get_num_points(),
-            return_dtype=pl.Int32,
-            is_elementwise=True,
+        g_bin = self._expr.struct.field("wkb_geometry").bin
+
+        return (
+            pl.when(
+                _is_linestring(self._expr.struct.field("wkb_geometry")),
+            )
+            .then(
+                g_bin.slice(5, 4).bin.reinterpret(dtype=pl.UInt32),
+            )
+            .otherwise(
+                pl.lit(0, dtype=pl.UInt32),
+            )
         )
 
-    def get_point(self, index: int) -> pl.Expr:
-        """Return the nth point of a linestring or linearring."""
+    def get_point(self, index: int | None = None) -> pl.Expr:
+        """Return the nth point of a linestring.
+
+        This expression does not use shapely.
+
+        This expression parses the spatial series WKB to extract the nth point of
+        linestrings. Negative values count from the end of the linestring backwards.
+
+        """
         if index is not None:
-            return self._expr.map_batches(
-                lambda s: s.spatial.get_point(index),
-                return_dtype=spatial_series_dtype,
-                is_elementwise=True,
-            )
-        # expect struct with two geometries.
-        return self._expr.map_batches(
-            lambda combined: combined.struct[0].spatial.get_point(
-                combined.struct[1],
-            ),
-            return_dtype=spatial_series_dtype,
-            is_elementwise=True,
+            geoms = self._expr
+            pnt_num = pl.lit(index)
+        else:
+            geoms = self._expr.struct[0]
+            pnt_num = self._expr.struct[1]
+
+        crs = geoms.struct.field("crs")
+        g_bin = geoms.struct.field("wkb_geometry").bin
+        # coordinate_dimension returns -1 for Nones, be sure to not use that.
+        coordinate_dimension = geoms.spatial.get_coordinate_dimension().replace(
+            {-1: None},
         )
+        slice_length = coordinate_dimension * 8
+
+        slice_start = (
+            pl.when(pnt_num >= 0)
+            .then(
+                9 + (pnt_num * coordinate_dimension * 8),
+            )
+            .otherwise(
+                pnt_num * coordinate_dimension * 8,
+            )
+        )
+
+        coordinates = g_bin.slice(slice_start, slice_length)
+
+        has_z = geoms.spatial.has_z()
+        mas_m = geoms.spatial.has_m()
+
+        point_geom = (
+            pl.when(
+                (geoms.struct.field("wkb_geometry").is_null())
+                | (coordinates.bin.size() < slice_length)
+                | ~(_is_linestring(geoms.struct.field("wkb_geometry"))),
+            )
+            .then(
+                pl.lit(value=None, dtype=pl.Binary),
+            )
+            .when(~has_z, ~mas_m)
+            .then(
+                (
+                    pl.lit(PREFIX_POINT_XY).bin.encode("hex")
+                    + coordinates.bin.encode("hex")
+                ).str.decode("hex"),
+            )
+            .when(has_z, ~mas_m)
+            .then(
+                (
+                    pl.lit(PREFIX_POINT_XYZ).bin.encode("hex")
+                    + coordinates.bin.encode("hex")
+                ).str.decode("hex"),
+            )
+            .when(~has_z, mas_m)
+            .then(
+                (
+                    pl.lit(PREFIX_POINT_XYM).bin.encode("hex")
+                    + coordinates.bin.encode("hex")
+                ).str.decode("hex"),
+            )
+            .when(has_z, mas_m)
+            .then(
+                (
+                    pl.lit(PREFIX_POINT_XYZM).bin.encode("hex")
+                    + coordinates.bin.encode("hex")
+                ).str.decode("hex"),
+            )
+            .alias("wkb_geometry")
+        )
+
+        return pl.struct(point_geom, crs)
 
     def get_type_id(self) -> pl.Expr:
-        """Return the type ID of a geometry.
+        """Return the shapely type ID of a geometry.
+
+        This expression does not use shapely.
+
+        This expression parses the spatial series WKB to extract the geometry type id of
+        a geometry.  If None is provided -1 is returned, the same as shapely.
 
         Possible values are:
 
-        None (missing) is -1
+            * None (missing) is -1
 
-        POINT is 0
+            * POINT is 0
 
-        LINESTRING is 1
+            * LINESTRING is 1
 
-        LINEARRING is 2
+            * POLYGON is 3
 
-        POLYGON is 3
+            * MULTIPOINT is 4
 
-        MULTIPOINT is 4
+            * MULTILINESTRING is 5
 
-        MULTILINESTRING is 5
+            * MULTIPOLYGON is 6
 
-        MULTIPOLYGON is 6
+            * GEOMETRYCOLLECTION is 7
 
-        GEOMETRYCOLLECTION is 7
+        Note:
+        ----
+        Shapely has the possibility of returning `2` for linear rings, however linear
+        ring geometry objects in shapely are converted to linestrings when serialized to
+        wkb, therefore, spatial polars will never return 2.
+
         """
-        return self._expr.map_batches(
-            lambda s: s.spatial.get_type_id(),
-            return_dtype=pl.Int8,
-            is_elementwise=True,
+        g_bin = self._expr.struct.field("wkb_geometry").bin
+        return (
+            g_bin.slice(1, 4)
+            .bin.reinterpret(dtype=pl.UInt32)
+            .mod(10)  # get only the ones digit
+            .replace({1: 0, 2: 1})  # replace 1:0 (points), 2:1(lines) to match shapely
+            .fill_null(-1)  # set Nones to -1 to match shapely
+            .cast(pl.Int8)  # no need to keep this as a UInt32
         )
 
     def get_x(self) -> pl.Expr:
         """Return the x-coordinate of a point.
 
+        This expression does not use shapely.
+
         This expression parses the spatial series WKB to extract the x-coordinate of a
-        point.  Non-point geometries will return nan.
+        point.  Non-point geometries will return nan, the same as shapely.
         """
-        g_bin = self._expr.struct.field("wkb_geometry").bin
         return (
             pl.when(
-                # little endian points
-                g_bin.starts_with(b"\x01\x01\x00\x00\x00")  # "point"
-                | g_bin.starts_with(b"\x01\xe9\x03\x00\x00")  # "pointZ iso"
-                | g_bin.starts_with(b"\x01\xd1\x07\x00\x00")  # "pointM iso"
-                | g_bin.starts_with(b"\x01\xb9\x0b\x00\x00")  # "pointZM iso"
+                _is_point(self._expr.struct.field("wkb_geometry")),
             )
             .then(
-                _le_point_wkb_to_x(self._expr.struct.field("wkb_geometry")),
+                _point_wkb_to_x(self._expr.struct.field("wkb_geometry")),
             )
             .otherwise(
                 pl.lit(float("nan"), dtype=pl.Float64),
@@ -351,20 +565,17 @@ class GeometryProperties:
     def get_y(self) -> pl.Expr:
         """Return the y-coordinate of a point.
 
+        This expression does not use shapely.
+
         This expression parses the spatial series WKB to extract the y-coordinate of a
-        point.  Non-point geometries will return nan.
+        point.  Non-point geometries will return nan, the same as shapely.
         """
-        g_bin = self._expr.struct.field("wkb_geometry").bin
         return (
             pl.when(
-                # little endian points
-                g_bin.starts_with(b"\x01\x01\x00\x00\x00")  # "point"
-                | g_bin.starts_with(b"\x01\xe9\x03\x00\x00")  # "pointZ iso"
-                | g_bin.starts_with(b"\x01\xd1\x07\x00\x00")  # "pointM iso"
-                | g_bin.starts_with(b"\x01\xb9\x0b\x00\x00")  # "pointZM iso"
+                _is_point(self._expr.struct.field("wkb_geometry")),
             )
             .then(
-                _le_point_wkb_to_y(self._expr.struct.field("wkb_geometry")),
+                _point_wkb_to_y(self._expr.struct.field("wkb_geometry")),
             )
             .otherwise(
                 pl.lit(float("nan"), dtype=pl.Float64),
@@ -374,18 +585,20 @@ class GeometryProperties:
     def get_z(self) -> pl.Expr:
         """Return the z-coordinate of a point.
 
+        This expression does not use shapely.
+
         This expression parses the spatial series WKB to extract the z-coordinate of a
-        point.  Non-point geometries, and points without a Z value will return nan.
+        point.  Non-point geometries, and points without a Z value will return nan,
+        the same as shapely.
         """
         g_bin = self._expr.struct.field("wkb_geometry").bin
         return (
             pl.when(
-                # little endian points
-                g_bin.starts_with(b"\x01\xe9\x03\x00\x00")  # "pointZ iso"
-                | g_bin.starts_with(b"\x01\xb9\x0b\x00\x00")  # "pointZM iso"
+                g_bin.starts_with(PREFIX_POINT_XYZ)
+                | g_bin.starts_with(PREFIX_POINT_XYZM),
             )
             .then(
-                _le_point_wkb_to_z(self._expr.struct.field("wkb_geometry")),
+                _point_wkb_to_z(self._expr.struct.field("wkb_geometry")),
             )
             .otherwise(
                 pl.lit(float("nan"), dtype=pl.Float64),
@@ -395,23 +608,26 @@ class GeometryProperties:
     def get_m(self) -> pl.Expr:
         """Return the m-coordinate of a point.
 
+        This expression does not use shapely.
+
         This expression parses the spatial series WKB to extract the m-coordinate of a
-        point.  Non-point geometries, and points without an M value will return nan.
+        point.  Non-point geometries, and points without an M value will return nan,
+        the same as shapely.
         """
         g_bin = self._expr.struct.field("wkb_geometry").bin
         return (
             pl.when(
                 # little endian points
-                g_bin.starts_with(b"\x01\xd1\x07\x00\x00")  # "pointM iso"
+                g_bin.starts_with(PREFIX_POINT_XYM),
             )
             .then(
-                _le_point_wkb_to_m_wo_z(self._expr.struct.field("wkb_geometry")),
+                _point_wkb_to_m_wo_z(self._expr.struct.field("wkb_geometry")),
             )
             .when(
-                g_bin.starts_with(b"\x01\xb9\x0b\x00\x00")  # "pointZM iso"
+                g_bin.starts_with(PREFIX_POINT_XYZM),
             )
             .then(
-                _le_point_wkb_to_m_w_z(self._expr.struct.field("wkb_geometry")),
+                _point_wkb_to_m_w_z(self._expr.struct.field("wkb_geometry")),
             )
             .otherwise(
                 pl.lit(float("nan"), dtype=pl.Float64),
@@ -631,13 +847,33 @@ class Predicates:
     def has_z(self) -> pl.Expr:
         """Return True if a geometry has Z coordinates.
 
-        Note that for GEOS < 3.12 this function returns False if the (first) Z
-        coordinate equals NaN.
+        This expression does not use shapely.
+
+        This expression parses the spatial series WKB to extract the wkb geometry type
+        and determine if the geometry has a Z coordinate.
         """
-        return self._expr.map_batches(
-            lambda s: s.spatial.has_z(),
-            return_dtype=pl.Boolean,
-            is_elementwise=True,
+        g_bin = self._expr.struct.field("wkb_geometry").bin
+        return (
+            (
+                g_bin.slice(1, 4).bin.reinterpret(dtype=pl.UInt32) // 1000 % 10
+            )  # get the thousands digit
+            .replace_strict({3: True, 1: True}, default=False)
+        )
+
+    def has_m(self) -> pl.Expr:
+        """Return True if a geometry has M coordinates.
+
+        This expression does not use shapely.
+
+        This expression parses the spatial series WKB to extract the wkb geometry type
+        and determine if the geometry has a M coordinate.
+        """
+        g_bin = self._expr.struct.field("wkb_geometry").bin
+        return (
+            (
+                g_bin.slice(1, 4).bin.reinterpret(dtype=pl.UInt32) // 1000 % 10
+            )  # get the thousands digit
+            .replace_strict({3: True, 2: True}, default=False)
         )
 
     def is_ccw(self) -> pl.Expr:
@@ -1287,16 +1523,13 @@ class Predicates:
                 # pythagorean theorem to other within distance little endian
                 le_to_other_dwithin = (
                     (
-                        _le_point_wkb_to_x(
-                            separated.struct.field("point_wkb_little"),
+                        _point_wkb_to_x(
+                            separated.struct.field("point_wkb"),
                         )
                         - other.x
                     )
                     ** 2
-                    + (
-                        _le_point_wkb_to_y(separated.struct.field("point_wkb_little"))
-                        - other.y
-                    )
+                    + (_point_wkb_to_y(separated.struct.field("point_wkb")) - other.y)
                     ** 2
                 ).sqrt() <= distance
 
@@ -2531,7 +2764,8 @@ class SpatialExpr(
         crs_wkt = pyproj.CRS.from_user_input(crs).to_wkt()
         crs = pl.lit(crs_wkt, dtype=pl.Categorical).alias("crs")
         return pl.struct(
-            _process_wkb_input(self._expr).alias("wkb_geometry"), crs,
+            _process_wkb_input(self._expr).alias("wkb_geometry"),
+            crs,
         ).name.keep()
 
     def from_WKT(self, crs: Any = 4326) -> pl.Expr:  #  NOQA:ANN401, N802

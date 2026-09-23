@@ -59,6 +59,14 @@ Many expressions are included which work with the geometry struct.  Most express
 
 As of version 0.4.0 some of the expressions which previously relied on shapely have been replaced with native [polars binary expressions](https://docs.pola.rs/api/python/stable/reference/expressions/binary.html) that operate directly on the WKB from the geometry struct.  For operations such as getting the X coordinate from a point, creating shapely geometry objects from the WKB, getting the X coordinates of the points, and then sending that back to polars took substantially more time than it does for polars to look at the appropriate bits in the WKB, and convert that to a floating point number.
 
+### Shapely WKB Serialization limitations
+Shapely has a few minor serialization limitations when converting geoemtry objects to WKB which also apply in spatial polars: 
+
+* linearrings will be converted to linestrings
+
+* a point with only NaN coordinates is converted to an empty point
+
+
 Spatial polars expressions can be accesssed in two ways:  
 
 ```py title="Using the .spatial namespace"
