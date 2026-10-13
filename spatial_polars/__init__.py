@@ -1,6 +1,12 @@
 """Spatial Polars."""
 
-from .io import read_geoparquet, read_spatial, scan_geoparquet, scan_spatial, spatial_series_dtype
+from .io import (
+    read_geoparquet,
+    read_spatial,
+    scan_geoparquet,
+    scan_spatial,
+    spatial_series_dtype,
+)
 from .spatialexpr import SpatialExpr
 from .spatialframe import SpatialFrame
 from .spatiallazyframe import SpatialLazyFrame
@@ -18,4 +24,4 @@ __all__ = [
     "spatial_series_dtype",
 ]
 
-__version__ = "0.4.1"  # dont forget pyproject.toml and uv lock
+__version__ = "0.5.0b1"  # dont forget pyproject.toml and uv lock

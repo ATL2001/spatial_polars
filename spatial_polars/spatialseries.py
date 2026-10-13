@@ -6,6 +6,7 @@ various spatial properties, measurements, predicates, and operations.
 
 from __future__ import annotations
 
+from functools import lru_cache
 from typing import TYPE_CHECKING, Any, Literal
 
 import numpy as np
@@ -19,6 +20,13 @@ from ._vendor import TransformerFromCRS, transform
 if TYPE_CHECKING:
     from numpy import array
 
+@lru_cache
+def _get_crs_wkt(crs:Any)->str:  # noqa: ANN401
+    """Repeated calls to pyproj seem to be kill the python kernel when reading data.
+
+    This function caches the call to from_user_input, and it seems to fix the issue.
+    """
+    return pyproj.CRS.from_user_input(crs).to_wkt()
 
 @pl.api.register_series_namespace("spatial")
 class SpatialSeries:
@@ -108,10 +116,11 @@ class SpatialSeries:
             The coordinate reference system of the data.
 
         """
-        crs_wkt = pyproj.CRS.from_user_input(crs).to_wkt()
+        crs_wkt = _get_crs_wkt(crs)
         crs = pl.lit(crs_wkt, dtype=pl.Categorical).alias("crs")
-        ss = pl.struct(self._s.alias("wkb_geometry"), crs).alias("geometry")
-        return pl.DataFrame().with_columns(ss).to_series()
+        return pl.struct(self._s.alias("wkb_geometry"), crs, eager=True).alias(
+            "geometry",
+        )
 
     def from_WKT(self, crs: Any = 4326) -> pl.Series:  #  NOQA:ANN401, N802
         """Return a spatial series from a series of WKB.
@@ -126,8 +135,9 @@ class SpatialSeries:
         crs = pl.lit(crs_wkt, dtype=pl.Categorical).alias("crs")
         geoms = shapely.from_wkt(self._s.to_numpy().copy())
         wkb_array = shapely.to_wkb(geoms, flavor="iso", byte_order=1)
-        ss = pl.struct(pl.Series("wkb_geometry", wkb_array), crs).alias("geometry")
-        return pl.DataFrame().with_columns(ss).to_series()
+        return pl.struct(pl.Series("wkb_geometry", wkb_array), crs, eager=True).alias(
+            "geometry",
+        )
 
     # Measurement
     def area(self) -> array:

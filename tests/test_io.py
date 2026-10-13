@@ -10,7 +10,7 @@ from polars.testing import assert_frame_equal
 import spatial_polars
 from spatial_polars import scan_geoparquet, scan_spatial
 
-test_dir = pathlib.Path(spatial_polars.__file__).parent.parent.parent / "tests"
+test_dir = pathlib.Path(spatial_polars.__file__).parent.parent / "tests"
 test_data_dir = test_dir / "test_data"
 test_data_gpkg = test_data_dir / "test_data.gpkg"
 
@@ -18,55 +18,58 @@ test_data_gpkg = test_data_dir / "test_data.gpkg"
 @pytest.fixture
 def arch_mound_df() -> pl.DataFrame:
     """Make a dataframe of generic stuff."""
-    return pl.DataFrame().with_columns(
-        pl.Series("Place", ["Gateway Arch", "Monks Mound"], pl.String),
-        pl.Series("f1_Int8", [0, 1], pl.Int8),
-        pl.Series("f1_Int16", [0, 1], pl.Int16),
-        pl.Series("f1_Int32", [0, 1], pl.Int32),
-        pl.Series("f1_Int64", [0, 1], pl.Int64),
-        pl.Series("f1_UInt8", [0, 1], pl.UInt8),
-        pl.Series("f1_UInt16", [0, 1], pl.UInt16),
-        pl.Series("f1_UInt32", [0, 1], pl.UInt32),
-        pl.Series("f1_UInt64", [0, 1], pl.UInt64),
-        pl.Series("f1_Boolean", [False, True], pl.Boolean),
-        pl.Series("f1_Float32", [0, 1], pl.Float32),
-        pl.Series("f1_Float64", [0, 1], pl.Float64),
-        pl.Series(
-            "f1_Date",
-            [datetime.date(2000, 1, 1), datetime.date(2000, 12, 31)],
-            pl.Date,
-        ),
-        pl.Series(
-            "f1_DT",
-            [
-                datetime.datetime(2000, 1, 1, 1, 1, 1),
-                datetime.datetime(2000, 12, 31, 23, 59, 59),
-            ],
-            pl.Datetime("ms", time_zone="UTC"),
-        ),
-        pl.Series("f1_String", ["a", "z"], pl.String),
-        pl.struct(
+    return pl.DataFrame(
+        [
+            pl.Series("Place", ["Gateway Arch", "Monks Mound"], pl.String),
+            pl.Series("f1_Int8", [0, 1], pl.Int8),
+            pl.Series("f1_Int16", [0, 1], pl.Int16),
+            pl.Series("f1_Int32", [0, 1], pl.Int32),
+            pl.Series("f1_Int64", [0, 1], pl.Int64),
+            pl.Series("f1_UInt8", [0, 1], pl.UInt8),
+            pl.Series("f1_UInt16", [0, 1], pl.UInt16),
+            pl.Series("f1_UInt32", [0, 1], pl.UInt32),
+            pl.Series("f1_UInt64", [0, 1], pl.UInt64),
+            pl.Series("f1_Boolean", [False, True], pl.Boolean),
+            pl.Series("f1_Float32", [0, 1], pl.Float32),
+            pl.Series("f1_Float64", [0, 1], pl.Float64),
             pl.Series(
-                "wkb_geometry",
-                [
-                    shapely.to_wkb(
-                        shapely.Point(-90.18497, 38.62456, 0),
-                        flavor="iso",
-                        byte_order=1,
-                    ),
-                    shapely.to_wkb(
-                        shapely.Point(-90.06211, 38.66072, 1),
-                        flavor="iso",
-                        byte_order=1,
-                    ),
-                ],
-                dtype=pl.Binary,
+                "f1_Date",
+                [datetime.date(2000, 1, 1), datetime.date(2000, 12, 31)],
+                pl.Date,
             ),
-            pl.lit(
-                pyproj.CRS.from_user_input(4326).to_wkt("WKT2_2019"),
-                dtype=pl.Categorical,
-            ).alias("crs"),
-        ).alias("geometry"),
+            pl.Series(
+                "f1_DT",
+                [
+                    datetime.datetime(2000, 1, 1, 1, 1, 1),
+                    datetime.datetime(2000, 12, 31, 23, 59, 59),
+                ],
+                pl.Datetime("ms"),
+            ),
+            pl.Series("f1_String", ["a", "z"], pl.String),
+            pl.struct(
+                pl.Series(
+                    "wkb_geometry",
+                    [
+                        shapely.to_wkb(
+                            shapely.Point(-90.18497, 38.62456, 0),
+                            flavor="iso",
+                            byte_order=1,
+                        ),
+                        shapely.to_wkb(
+                            shapely.Point(-90.06211, 38.66072, 1),
+                            flavor="iso",
+                            byte_order=1,
+                        ),
+                    ],
+                    dtype=pl.Binary,
+                ),
+                pl.lit(
+                    pyproj.CRS.from_user_input(4326).to_wkt("WKT2_2019"),
+                    dtype=pl.Categorical,
+                ).alias("crs"),
+                eager=True,
+            ).alias("geometry"),
+        ],
     )
 
 
@@ -86,37 +89,29 @@ def arch_mound_df() -> pl.DataFrame:
 def test_scan_geojson(arch_mound_df: pl.DataFrame) -> None:
     """Test scanning geojson."""
     lf = scan_spatial(test_data_dir / "arch_mound.geojson")
-    # reading from geojson will automatically add OGC_FID
-    arch_mound_df = arch_mound_df.with_row_index("OGC_FID")
     assert_frame_equal(lf.collect(), arch_mound_df, check_dtypes=False)
 
 
 def test_scan_geojsonsseq(arch_mound_df: pl.DataFrame) -> None:
     """Test scanning geojsonseq."""
     lf = scan_spatial(test_data_dir / "arch_mound.geojsonl")
-    arch_mound_df = arch_mound_df.with_row_index(
-        "OGC_FID",
-        # reading from geojsonl will automatically add OGC_FID
-    )
     assert_frame_equal(lf.collect(), arch_mound_df, check_dtypes=False)
 
 
 def test_scan_gpkg(arch_mound_df: pl.DataFrame) -> None:
     """Test scanning geopackage."""
     lf = scan_spatial(test_data_gpkg, layer="arch_mound")
-    arch_mound_df = (
-        arch_mound_df.rename(
-            {"geometry": "geom"},
-            # geopackage geometry field is named geom
-        )
-        .with_row_index(
-            "fid",
-            # reading from geopackage will automatically read fids,
-            # we'll just add that to the fixture here
-        )
-        .with_columns(
-            pl.col("fid") + 1,
-        )
+    arch_mound_df = arch_mound_df.rename(
+        {"geometry": "geom"},
+        # geopackage geometry field is named geom
+    ).with_row_index(
+        "fid",
+        offset=1,
+        # reading from geopackage will automatically read fids,
+        # we'll just add that to the fixture here
+    )
+    arch_mound_df = arch_mound_df.drop("fid").insert_column(
+        -1, arch_mound_df.get_column("fid"),
     )
     assert_frame_equal(lf.collect(), arch_mound_df, check_dtypes=False)
 
@@ -124,6 +119,9 @@ def test_scan_gpkg(arch_mound_df: pl.DataFrame) -> None:
 def test_scan_geoparquet(arch_mound_df: pl.DataFrame) -> None:
     """Test scanning geoparquet."""
     lf = scan_geoparquet(test_data_dir / "arch_mound2.parquet")
+    arch_mound_df = arch_mound_df.with_columns(
+        pl.col("f1_DT").dt.replace_time_zone("UTC"),
+    )
     assert_frame_equal(lf.collect(), arch_mound_df)
 
 
