@@ -146,7 +146,7 @@ def read_geoparquet(source: FileSource, kwargs: Any=None)-> pl.DataFrame:  # noq
         kwargs = {}
     return scan_geoparquet(source, kwargs).collect()
 
-def scan_spatial(  # NOQA:C901
+def scan_spatial(  # noqa: C901, PLR0915
     path_or_buffer: str | Path | BytesIO,
     layer: str | int | None = None,
     encoding: str | None = None,
@@ -251,6 +251,7 @@ def scan_spatial(  # NOQA:C901
         else:
             ret_g_col_name = pyogrio_g_col_name
         schema[ret_g_col_name] = spatial_series_dtype
+    crs_wkt = pyproj.CRS(layer_info.get("crs")).to_wkt()
 
     def source_generator(  # NOQA:C901,PLR0912
         with_columns: list[str] | None,
@@ -296,11 +297,7 @@ def scan_spatial(  # NOQA:C901
             batch_size=batch_size,
             use_pyarrow=True,
         ) as source:
-            meta, reader = source
-
-            if read_geometry is True and ret_g_col_name:
-                # extract the crs from the metadata
-                crs_wkt = pyproj.CRS(meta["crs"]).to_wkt()
+            _meta, reader = source
 
             while n_rows is None or n_rows > 0:
                 for batch in reader:
@@ -330,7 +327,7 @@ def scan_spatial(  # NOQA:C901
                     yield batch_df
                 if n_rows is None or n_rows <= 0:
                     break
-    return register_io_source(io_source=source_generator, schema=schema)
+    return register_io_source(io_source=source_generator, schema=schema, is_pure=True)
 
 
 def read_spatial(

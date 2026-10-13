@@ -6,14 +6,19 @@ various spatial properties, measurements, predicates, and operations.
 
 from __future__ import annotations
 
+from functools import lru_cache
+from pathlib import Path
 from typing import Any, Literal
 
 import polars as pl
 import pyarrow as pa
 import pyproj
 import shapely
+from polars.plugins import register_plugin_function
 
 from .io import spatial_series_dtype
+
+LIB = Path(__file__).parent
 
 WKB_POINT_XY_TYPE = 1
 WKB_LINESTRING_XY_TYPE = 2
@@ -62,6 +67,14 @@ PREFIX_POLYGON_XYZ = b"\x01\xeb\x03\x00\x00"
 PREFIX_POLYGON_XYM = b"\x01\xd3\x07\x00\x00"
 PREFIX_POLYGON_XYZM = b"\x01\xbb\x0b\x00\x00"
 
+
+@lru_cache
+def _get_crs_wkt(crs:Any)->str:  # noqa: ANN401
+    """Repeated calls to pyproj seem to be kill the python kernel when reading data.
+
+    This function caches the call to from_user_input, and it seems to fix the issue.
+    """
+    return pyproj.CRS.from_user_input(crs).to_wkt()
 
 def _is_point(expr: pl.Expr) -> pl.Expr:
     """Expression to determine if the WKB is a point."""
@@ -651,10 +664,18 @@ class Measurement:
         self._expr = expr
 
     def area(self) -> pl.Expr:
-        """Compute the area of a (multi)polygon."""
-        return self._expr.map_batches(
-            lambda s: s.spatial.area(),
-            return_dtype=pl.Float64,
+        """Compute the area of a (multi)polygon.
+
+        This expression does not use shapely.
+
+        This expression parses the spatial series WKB to extract x/y coordinates of
+        polygons/multipolygons, and compute the area using the shoelace formula.  Points
+        and lines return 0 and None returns nan, the same as shapely.
+        """
+        return register_plugin_function(
+            args=[self._expr.struct.field("wkb_geometry")],
+            plugin_path=LIB,
+            function_name="area",
             is_elementwise=True,
         )
 
@@ -2761,7 +2782,7 @@ class SpatialExpr(
             The coordinate reference system of the data.
 
         """
-        crs_wkt = pyproj.CRS.from_user_input(crs).to_wkt()
+        crs_wkt = _get_crs_wkt(crs)
         crs = pl.lit(crs_wkt, dtype=pl.Categorical).alias("crs")
         return pl.struct(
             _process_wkb_input(self._expr).alias("wkb_geometry"),
