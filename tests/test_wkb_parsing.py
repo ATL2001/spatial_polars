@@ -259,3 +259,20 @@ def test_get_exterior_ring(all_wkbs: list[bytes]) -> None:
             .item()["wkb_geometry"]
         )
         np.testing.assert_equal(result, expected, err_msg=f"Failing wkb was: {wkb}")
+
+
+def test_area(all_wkbs: list[bytes]) -> None:
+    """Test area expression."""
+    for wkb in [*all_wkbs, None]:
+        expected = shapely.area(shapely.from_wkb(wkb))
+        result = (
+            pl.DataFrame(
+                {"wkb": wkb},
+                schema={"wkb": pl.Binary},
+            )
+            .select(
+                pl.col("wkb").spatial.from_WKB().spatial.area(),
+            )
+            .item()
+        )
+        np.testing.assert_equal(result, expected, err_msg=f"Failing wkb was: {wkb}")
