@@ -43,7 +43,7 @@ def test_distance_two_cols(
     """Test distance two column input."""
     df = pl.concat(
         [two_points_df, two_more_points_df.rename({"geometry": "other_geometry"})],
-        how="horizontal",
+        how="horizontal_extend",
     )
 
     distance_s = df.select(

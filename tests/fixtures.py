@@ -16,17 +16,18 @@ def arch_mound_df() -> pl.DataFrame:
 
     One at the gateway arch one at monks mound wkid 4326.
     """
-    return pl.DataFrame().with_columns(
-        pl.Series("Place", ["Gateway Arch", "Monks Mound"], pl.String),
+    return pl.DataFrame(
+        {
+            "Place": ["Gateway Arch", "Monks Mound"],
+            "wkb_geometry": [
+                shapely.Point(-90.18497, 38.62456).wkb,
+                shapely.Point(-90.06211, 38.66072).wkb,
+            ],
+        },
+    ).select(
+        pl.col("Place"),
         pl.struct(
-            pl.Series(
-                "wkb_geometry",
-                [
-                    shapely.Point(-90.18497, 38.62456).wkb,
-                    shapely.Point(-90.06211, 38.66072).wkb,
-                ],
-                dtype=pl.Binary,
-            ),
+            pl.col("wkb_geometry"),
             pl.lit(
                 pyproj.CRS.from_user_input(4326).to_wkt(),
                 dtype=pl.Categorical,
@@ -41,16 +42,16 @@ def two_points_df() -> pl.DataFrame:
 
     One at (0,0) one at (1,1) wkid 4326.
     """
-    return pl.DataFrame().with_columns(
+    return pl.DataFrame(
+        {
+            "wkb_geometry": [
+                shapely.Point(0, 0).wkb,
+                shapely.Point(1, 1).wkb,
+            ],
+        },
+    ).select(
         pl.struct(
-            pl.Series(
-                "wkb_geometry",
-                [
-                    shapely.Point(0, 0).wkb,
-                    shapely.Point(1, 1).wkb,
-                ],
-                dtype=pl.Binary,
-            ),
+            pl.col("wkb_geometry"),
             pl.lit(
                 pyproj.CRS.from_user_input(4326).to_wkt(),
                 dtype=pl.Categorical,
@@ -65,16 +66,16 @@ def two_more_points_df() -> pl.DataFrame:
 
     One at (0, 10) one at (1, 21) wkid 4326.
     """
-    return pl.DataFrame().with_columns(
+    return pl.DataFrame(
+        {
+            "wkb_geometry": [
+                shapely.Point(0, 10).wkb,
+                shapely.Point(1, 21).wkb,
+            ],
+        },
+    ).select(
         pl.struct(
-            pl.Series(
-                "wkb_geometry",
-                [
-                    shapely.Point(0, 10).wkb,
-                    shapely.Point(1, 21).wkb,
-                ],
-                dtype=pl.Binary,
-            ),
+            pl.col("wkb_geometry"),
             pl.lit(
                 pyproj.CRS.from_user_input(4326).to_wkt(),
                 dtype=pl.Categorical,
@@ -193,7 +194,7 @@ def all_wkbs() -> list[bytes]:
                 ],
             ],
         ),
-        shapely.MultiPolygon( # multi polygon with a hole in one
+        shapely.MultiPolygon(  # multi polygon with a hole in one
             [
                 shapely.Polygon(
                     [
@@ -224,14 +225,21 @@ def all_wkbs() -> list[bytes]:
                 ),
             ],
         ),
-        shapely.MultiLineString( # multilinestring with 5 parts
+        shapely.MultiLineString(  # multilinestring with 5 parts
             [
                 ((0, 1), (2, 3)),
                 ((4, 5), (6, 7)),
                 ((8, 9), (10, 11)),
                 ((12, 13), (14, 15)),
                 ((16, 17), (18, 19)),
-            ]
+            ],
+        ),
+        shapely.GeometryCollection(
+            [
+                shapely.Point((0, 1)),
+                shapely.LineString([(0, 1), (2, 3)]),
+                shapely.Polygon([[0, 0], [1, 2], [3, 4], [5, 6], [0, 0]]),
+            ],
         ),
     ]
 
@@ -252,9 +260,9 @@ def all_wkbs() -> list[bytes]:
                 "LINESTRING ZM (0 1 2 6, 3 4 5 7)",
                 "MULTILINESTRING ZM ((0 1 2 12, 3 4 5 13), (6 7 8 14, 9 10 11 15))",
                 "POLYGON ZM ((0 0 0 0, 1 2 3 10, 4 5 6 11, 7 8 9 12, 0 0 0 0))",
-                "MULTIPOLYGON ZM (((0 0 0 0, 1 2 3 10, 4 5 6 11, 7 8 9 12, 0 0 0 0)), ((10 10 10 10, 11 12 13 20, 14 15 16 21, 17 18 19 22, 10 10 10 10)))",
+                "MULTIPOLYGON ZM (((0 0 0 0, 1 2 3 10, 4 5 6 11, 7 8 9 12, 0 0 0 0)), ((10 10 10 10, 11 12 13 20, 14 15 16 21, 17 18 19 22, 10 10 10 10)))",  # noqa: E501
             ]
-        ]
+        ],
     )
     geoms.extend(m_geoms)
     geoms.sort(key=shapely.to_wkt)
