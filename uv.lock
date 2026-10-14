@@ -2847,7 +2847,7 @@ wheels = [
 
 [[package]]
 name = "spatial-polars"
-version = "0.5.0b1"
+version = "0.5.0b2"
 source = { editable = "." }
 
 [package.optional-dependencies]
