@@ -251,7 +251,10 @@ def scan_spatial(  # noqa: C901, PLR0915
         else:
             ret_g_col_name = pyogrio_g_col_name
         schema[ret_g_col_name] = spatial_series_dtype
-    crs_wkt = pyproj.CRS(layer_info.get("crs")).to_wkt()
+    if layer_info.get("crs"):
+        crs_wkt = pyproj.CRS(layer_info.get("crs")).to_wkt()
+    else:
+        crs_wkt = None
 
     def source_generator(  # NOQA:C901,PLR0912
         with_columns: list[str] | None,
