@@ -367,6 +367,17 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
+  <a href="#shapely-wkb-serialization-limitations" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Shapely WKB Serialization limitations
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#spatial-expressions-which-use-more-than-geometry" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -1382,6 +1393,36 @@
   
   
     <li class="md-nav__item">
+      <a href="blog/category/expression/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    expression
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    
+  
+  
+    <li class="md-nav__item">
       <a href="blog/category/geoparquet/" class="md-nav__link">
         
   
@@ -1480,6 +1521,36 @@
     
   
     pyogrio
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    
+  
+  
+    <li class="md-nav__item">
+      <a href="blog/category/rust/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    rust
   
 
     
@@ -1670,6 +1741,17 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
+  <a href="#shapely-wkb-serialization-limitations" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Shapely WKB Serialization limitations
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#spatial-expressions-which-use-more-than-geometry" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -1780,6 +1862,16 @@
 </li>
 </ol>
 <p>As of version 0.4.0 some of the expressions which previously relied on shapely have been replaced with native <a href="https://docs.pola.rs/api/python/stable/reference/expressions/binary.html">polars binary expressions</a> that operate directly on the WKB from the geometry struct.  For operations such as getting the X coordinate from a point, creating shapely geometry objects from the WKB, getting the X coordinates of the points, and then sending that back to polars took substantially more time than it does for polars to look at the appropriate bits in the WKB, and convert that to a floating point number.</p>
+<h3 id="shapely-wkb-serialization-limitations">Shapely WKB Serialization limitations</h3>
+<p>Shapely has a few minor serialization limitations when converting geoemtry objects to WKB which also apply in spatial polars: </p>
+<ul>
+<li>
+<p>linearrings will be converted to linestrings</p>
+</li>
+<li>
+<p>a point with only NaN coordinates is converted to an empty point</p>
+</li>
+</ul>
 <p>Spatial polars expressions can be accesssed in two ways:  </p>
 <div class="language-py highlight"><span class="filename">Using the .spatial namespace</span><pre><span></span><code><span id="__span-5-1"><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a><span class="n">df</span><span class="o">.</span><span class="n">with_columns</span><span class="p">(</span>
 </span><span id="__span-5-2"><a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a>    <span class="n">pl</span><span class="o">.</span><span class="n">col</span><span class="p">(</span><span class="s2">&quot;geometry&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">spatial</span><span class="o">.</span><span class="n">buffer</span><span class="p">(</span><span class="mi">10</span><span class="p">)</span> <span class="c1"># (1)!</span>

@@ -1258,6 +1258,36 @@
   
   
     <li class="md-nav__item">
+      <a href="../expression/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    expression
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    
+  
+  
+    <li class="md-nav__item">
       <a href="../geoparquet/" class="md-nav__link">
         
   
@@ -1356,6 +1386,36 @@
     
   
     pyogrio
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    
+  
+  
+    <li class="md-nav__item">
+      <a href="../rust/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    rust
   
 
     
@@ -1518,6 +1578,75 @@
       <header class="md-typeset">
         <h1 id="wkb">wkb</h1>
       </header>
+      
+        <article class="md-post md-post--excerpt">
+  <header class="md-post__header">
+    
+    <div class="md-post__meta md-meta">
+      <ul class="md-meta__list">
+        <li class="md-meta__item">
+          <time datetime="2026-10-31 00:00:00+00:00">October 31, 2026</time></li>
+        
+          <li class="md-meta__item">
+            in
+            
+              <a href="./" class="md-meta__link">wkb</a>, 
+              <a href="../rust/" class="md-meta__link">rust</a>, 
+              <a href="../expression/" class="md-meta__link">expression</a></li>
+        
+        
+          
+          <li class="md-meta__item">
+            
+              4 min read
+            
+          </li>
+        
+        
+      </ul>
+      
+    </div>
+  </header>
+  <div class="md-post__content md-typeset">
+    <h2 id="that-escalated-quickly"><a class="toclink" href="../../2026/10/31/that-escalated-quickly/">That Escalated Quickly</a></h2>
+<h3 id="tldr"><a class="toclink" href="../../2026/10/31/that-escalated-quickly/#tldr">tldr</a></h3>
+<p>I've started dabbling with polars plugin expressions written in rust to do some stuff instead of using shapely or using other polars expressions that parse WKB.</p>
+<h3 id="how-i-got-here"><a class="toclink" href="../../2026/10/31/that-escalated-quickly/#how-i-got-here">How I Got Here</a></h3>
+<p>With v0.4 I started using polars expressions to parse WKB and return information about geometries.  Prior to v0.4, simple operations like getting the X value of a point involved passing the WKB over to shapely to create a shapely geometry object, and then asking shapely to return the X coordinate of the point.  Using polars to read the X coordinate from the WKB was giving a pretty substantial speed boost for these simple operations, and I wanted to try to implement more expressions with a similar pattern.  I had already implemented the <a href="../../../SpatialExpr/#spatial_polars.spatialexpr.GeometryProperties.get_exterior_ring">get_exterior_ring</a> expression using polars expressions, and thought it would be neat if I could compute the area of a polygon using a similar approach.  After a fair bit of struggle, I gave up <img alt="😢" class="twemoji" src="https://cdn.jsdelivr.net/gh/jdecked/twemoji@16.0.1/assets/svg/1f622.svg" title=":cry:" />.  Implementing the logic to grab the exterior ring of a polygon with a polars expression was one thing, but then also computing the area from those coordinates, dealing with holes in polygons, not to mention what to do with multipolygons and geometry collections, it was simply too much.  That being said, I had gotten myself excited to see what I could do, so I didnt stop there.</p>
+<h3 id="the-escalation"><a class="toclink" href="../../2026/10/31/that-escalated-quickly/#the-escalation">The Escalation</a></h3>
+<p class="annotate">Once apoun a time(1) when polars first introduced expressions plugins, <a href="https://github.com/ATL2001/polars_uuid4">I wrote one</a>.  The plugin created random UUID4 values for your dataframe.  I didn't then, nor do I now, consider myself any sort of expert in UUID's so I didnt publish it to pypi(2), and in the grand scale of the pipelines I was writing at the time, saving a couple seconds generating UUIDs wasn't going to make much of a difference in the end, so I just stuck with my python based UUID code.  This foray into UUID generation is here simply to say, I'm not <img alt="💯" class="twemoji" src="https://cdn.jsdelivr.net/gh/jdecked/twemoji@16.0.1/assets/svg/1f4af.svg" title=":100:" /> new to writing rust, I've gone thru a bit of <a href="https://doc.rust-lang.org/book/">the rust book</a> and created that and a few other little odds and ends, but never anything in a professional capacity or anything very big, and the stuff I have done... it's safe to say I'm rather (3) rusty on.  I decided to see what I could do with a proper polars plugin expression.</p>
+<ol>
+<li class="annotate">Almost three years ago(1)<ol>
+<li>Where does the time go?</li>
+</ol>
+</li>
+<li>It did do that one task well in my non UUID expert opinion </li>
+<li>Pun incoming... </li>
+</ol>
+<h3 id="the-approach"><a class="toclink" href="../../2026/10/31/that-escalated-quickly/#the-approach">The Approach</a></h3>
+<p>Instead of just jumping in straight with the rust code, I started by implementing a few functions in python which parsed WKB bytes to extract the coordinates of each of the rings of a polygon, and compute the area of the rings, and subtract the rings which are holes from the first ring's area.  This approach allowed me to test a few things about my logic in a language I already know well.  </p>
+<ul>
+<li>I know how to properly parse all the coordinates from the exterior and interior rings</li>
+<li>I could implement an algorithm that computes the area from a set of coordinates</li>
+<li>I could easily use shapely to verify that my result was correct</li>
+</ul>
+<p class="annotate">Then with my working python WKB area function(1) I turned to google and asked it to convert my python code to rust.  I looked over the code, and then slapped it into a blank polars expression package from <a href="https://marcogorelli.github.io/polars-plugins-tutorial/">Marco's excellent polars plugin tutorial</a> and wired it all up.  Did it work? nope.  The code wouldn't compile, but after a bit of work, I got it going.  After I got it working for a polygon and a polygon with holes in it, I took on the task of making it work for multipolygons and gometry collections writing the rust code myself.</p>
+<ol>
+<li>
+<p class="annotate">Big shout out to <a href="https://docs.ogc.org/is/06-103r4/06-103r4.pdf">this OGC 'OpenGIS® Implementation Standard for Geographic information - Simple feature access - Part 1: Common architecture ' doc section 8.2.8</a> for a great run down on WKB formatting, and my old <a href="https://www.amazon.com/dp/1558605886?lv=shuf&amp;channelId=500&amp;plpRedirect=mhFallback">Spatial Databases: with Application to GIS</a>(1) text book for the refresher in how to compute the area of a polygon!</p>
+<ol>
+<li>Not an affiliate link.. I still like this book still after 20 something years</li>
+</ol>
+</li>
+</ol>
+<h3 id="the-result"><a class="toclink" href="../../2026/10/31/that-escalated-quickly/#the-result">The Result</a></h3>
+<p>I wrote some code that generated 1 million convex hull polygons each formed from 10 random points.  Then I added the ploygons as WKB to a spatial polars dataframe and used the <a href="../../../SpatialExpr/#spatial_polars.spatialexpr.Measurement.area">.spatial.area()</a> expression to compute the area.  With version 0.4.1 on my machine the area operation took 1.2 seconds.  With version 0.5.0b4 it only took .2 seconds, 6X faster!</p>
+<h3 id="where-to-next"><a class="toclink" href="../../2026/10/31/that-escalated-quickly/#where-to-next">Where to Next?</a></h3>
+<p>Honestly not sure where this is all going at this point other than me learning more.  I'm pretty jazzed that the polars team is <a href="https://github.com/pola-rs/polars/pull/29987">making progress for geopolars</a> so hopefully that takes off and hopefully I can lend a hand over there!</p>
+    
+    
+  </div>
+</article>
       
         <article class="md-post md-post--excerpt">
   <header class="md-post__header">
