@@ -2847,8 +2847,21 @@ wheels = [
 
 [[package]]
 name = "spatial-polars"
-version = "0.5.0b4"
+version = "0.5.0"
 source = { editable = "." }
+dependencies = [
+    { name = "cloudpickle" },
+    { name = "geoarrow-pyarrow" },
+    { name = "numpy", version = "2.2.6", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.11'" },
+    { name = "numpy", version = "2.4.6", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.11'" },
+    { name = "polars" },
+    { name = "pyarrow" },
+    { name = "pyogrio" },
+    { name = "pyproj", version = "3.7.1", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.11'" },
+    { name = "pyproj", version = "3.7.2", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.11'" },
+    { name = "shapely" },
+    { name = "tzdata" },
+]
 
 [package.optional-dependencies]
 examples = [
@@ -2897,11 +2910,20 @@ dev = [
 
 [package.metadata]
 requires-dist = [
+    { name = "cloudpickle", specifier = ">=3.1.1" },
+    { name = "geoarrow-pyarrow", specifier = ">=0.1.2" },
     { name = "geodatasets", marker = "extra == 'examples'", specifier = ">=2024.8.0" },
     { name = "lonboard", marker = "extra == 'lonboard'", specifier = ">=0.10.4" },
     { name = "matplotlib", marker = "extra == 'lonboard'", specifier = ">=3.7.5" },
+    { name = "numpy", specifier = ">=1.14" },
     { name = "palettable", marker = "extra == 'lonboard'", specifier = ">=3.3.3" },
+    { name = "polars", specifier = ">=1.30.0" },
+    { name = "pyarrow", specifier = ">=14.0.2" },
+    { name = "pyogrio", specifier = ">=0.11.0" },
+    { name = "pyproj", specifier = ">=3.3" },
     { name = "scipy", marker = "extra == 'knn'", specifier = ">=1.13.1" },
+    { name = "shapely", specifier = ">=2.0.7" },
+    { name = "tzdata", specifier = ">=2025.2" },
 ]
 
 [package.metadata.requires-dev]
